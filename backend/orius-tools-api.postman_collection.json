@@ -1,0 +1,188 @@
+{
+    "info": {
+        "_postman_id": "orius-tools-api",
+        "name": "Orius Tools API - Ferramentas para Equipe orius",
+        "description": "Coleção para testar os endpoints de conversão de PDF para JSON do sistema de cartório.",
+        "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+    },
+    "item": [
+        {
+            "name": "1. Converter Receita SEE (OCR)",
+            "request": {
+                "method": "POST",
+                "header": [],
+                "body": {
+                    "mode": "formdata",
+                    "formdata": [
+                        {
+                            "key": "pdf",
+                            "type": "file",
+                            "description": "Selecione o arquivo PDF da Receita (ex: receita_estrela_do_norte...pdf)"
+                        }
+                    ]
+                },
+                "url": {
+                    "raw": "{{base_url}}/api/converter/receita-see",
+                    "host": [
+                        "{{base_url}}"
+                    ],
+                    "path": [
+                        "api",
+                        "converter",
+                        "receita-see"
+                    ]
+                },
+                "description": "Este endpoint recebe o PDF da Receita do SEE (que geralmente é uma imagem digitalizada), aplica OCR usando Tesseract e retorna os registros em JSON."
+            },
+            "response": []
+        },
+        {
+            "name": "2. Converter Guia Sistema (Texto)",
+            "request": {
+                "method": "POST",
+                "header": [],
+                "body": {
+                    "mode": "formdata",
+                    "formdata": [
+                        {
+                            "key": "pdf",
+                            "type": "file",
+                            "description": "Selecione o arquivo PDF da Guia do Sistema (ex: guia-sistema-mararosa...pdf)"
+                        }
+                    ]
+                },
+                "url": {
+                    "raw": "{{base_url}}/api/converter/guia-sistema",
+                    "host": [
+                        "{{base_url}}"
+                    ],
+                    "path": [
+                        "api",
+                        "converter",
+                        "guia-sistema"
+                    ]
+                },
+                "description": "Este endpoint recebe o PDF da Guia do Sistema Interno (que contém texto selecionável), extrai os dados mantendo o layout da tabela e calcula os totais do rodapé."
+            },
+            "response": []
+        },
+        {
+            "name": "3. Converter Tabela Emolumentos (Excel)",
+            "request": {
+                "method": "POST",
+                "header": [],
+                "body": {
+                    "mode": "formdata",
+                    "formdata": [
+                        {
+                            "key": "file",
+                            "type": "file",
+                            "description": "Selecione o arquivo .xlsx da Tabela de Emolumentos"
+                        }
+                    ]
+                },
+                "url": {
+                    "raw": "{{base_url}}/api/converter/tabela-emolumentos",
+                    "host": [
+                        "{{base_url}}"
+                    ],
+                    "path": [
+                        "api",
+                        "converter",
+                        "tabela-emolumentos"
+                    ]
+                },
+                "description": "Converte a planilha oficial de Emolumentos (XLSX) para JSON, aplicando regras de negócio para Protestos e identificação de sistemas."
+            },
+            "response": []
+        },
+        {
+            "name": "4. Converter Guia Itens (CSV)",
+            "request": {
+                "method": "POST",
+                "header": [],
+                "body": {
+                    "mode": "formdata",
+                    "formdata": [
+                        {
+                            "key": "file",
+                            "type": "file",
+                            "description": "Selecione o arquivo guia_itens_xxxx.csv"
+                        }
+                    ]
+                },
+                "url": {
+                    "raw": "{{base_url}}/api/converter/guia-csv",
+                    "host": [
+                        "{{base_url}}"
+                    ],
+                    "path": [
+                        "api",
+                        "converter",
+                        "guia-csv"
+                    ]
+                },
+                "description": "Converte o CSV de itens da guia do SEE, tratando colunas extras e formatação monetária."
+            },
+            "response": []
+        },
+		{
+			"name": "5. Validar e Corrigir DOI (JSON)",
+			"request": {
+				"method": "POST",
+				"header": [],
+				"body": {
+					"mode": "formdata",
+					"formdata": [
+						{
+							"key": "file",
+							"type": "file",
+							"description": "Selecione o arquivo .json da Declaração DOI"
+						}
+					]
+				},
+				"url": {
+					"raw": "{{base_url}}/api/converter/doi",
+					"host": [
+						"{{base_url}}"
+					],
+					"path": [
+						"api",
+						"converter",
+						"doi"
+					]
+				},
+				"description": "Valida estrutura (Schema) e regras de negócio (CPF, CNPJ, CIB) de um arquivo DOI, aplicando correções automáticas de tipagem."
+			},
+			"response": []
+		}
+    ],
+    "event": [
+        {
+            "listen": "prerequest",
+            "script": {
+                "type": "text/javascript",
+                "exec": [
+                    ""
+                ]
+            }
+        },
+        {
+            "listen": "test",
+            "script": {
+                "type": "text/javascript",
+                "exec": [
+                    ""
+                ]
+            }
+        }
+    ],
+    "variable": [
+        {
+            "key": "base_url",
+            "value": "http://localhost:3000",
+            "type": "string",
+            "description": "URL base da API"
+        }
+    ]
+}

@@ -1,0 +1,38 @@
+# Dependências (o Dockerfile vai instalar as versões corretas do Linux)
+node_modules
+npm-debug.log
+
+# Controle de Versão e Configurações de IDE
+.git
+.gitignore
+.vscode
+.idea
+*.swp
+*.swo
+
+# Arquivos de Sistema Operacional
+.DS_Store
+Thumbs.db
+
+# Arquivos de Ambiente (Segurança: nunca copie .env para a imagem)
+.env
+
+# Arquivos Temporários de Processamento da API
+# (Não queremos copiar PDFs de teste ou imagens temporárias geradas localmente)
+src/uploads/*
+temp_*
+*.png
+*.jpg
+*.jpeg
+debug_ocr_raw.txt
+
+# PDFs de teste que você tem na raiz
+*.pdf
+
+# Documentação e Logs
+README.md
+*.log
+
+# Docker
+Dockerfile
+.dockerignore
