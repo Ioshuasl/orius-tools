@@ -1,0 +1,13 @@
+@import "tailwindcss";
+
+/* Ensina o Tailwind v4 a aplicar o modo escuro quando a classe .dark estiver presente no HTML */
+@custom-variant dark (&:where(.dark, .dark *));
+
+body {
+  @apply bg-gray-50 text-gray-900 transition-colors duration-200;
+}
+
+/* Base global para quando estiver no modo escuro */
+.dark body {
+  @apply bg-gray-900 text-gray-100;
+}

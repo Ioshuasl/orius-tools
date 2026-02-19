@@ -1,0 +1,627 @@
+<?xml version="1.0" standalone="yes" ?>
+<NewDataSet>
+	<xs:schema id="NewDataSet" xmlns="" xmlns:xs="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata">
+		<xs:element name="NewDataSet" msdata:IsDataSet="true" msdata:MainDataTable="AtoCep" msdata:UseCurrentLocale="true">
+			<xs:complexType>
+				<xs:choice minOccurs="0" maxOccurs="unbounded">
+					<xs:element name="AtoCep">
+						<xs:complexType>
+							<xs:sequence>
+								<xs:element name="TipoAtoCep" type="xs:string" minOccurs="0"/>
+								<xs:element name="NaturezaEscritura" type="xs:string" minOccurs="0"/>
+								<xs:element name="DataAto" type="xs:dateTime" minOccurs="0"/>
+								<xs:element name="Livro" type="xs:int" minOccurs="0"/>
+								<xs:element name="LivroComplemento" type="xs:string" minOccurs="0"/>
+								<xs:element name="Folha" type="xs:int" minOccurs="0"/>
+								<xs:element name="FolhaComplemento" type="xs:string" minOccurs="0"/>
+								<xs:element name="Valor" type="xs:decimal" minOccurs="0"/>
+								<xs:element name="NaturezaLitigio" type="xs:int" minOccurs="0"/>
+								<xs:element name="Acordo" type="xs:string" minOccurs="0"/>
+								<xs:element name="Desconhecido" type="xs:string" minOccurs="0"/>
+								<xs:element name="ReferenteLivro" type="xs:int" minOccurs="0"/>
+								<xs:element name="ReferenteLivroComplemento" type="xs:string" minOccurs="0"/>
+								<xs:element name="ReferenteFolha" type="xs:int" minOccurs="0"/>
+								<xs:element name="ReferenteFolhaComplemento" type="xs:string" minOccurs="0"/>
+								<xs:element name="ReferenteUFOrigem" type="xs:string" minOccurs="0"/>
+								<xs:element name="ReferenteCidadeOrigem" type="xs:string" minOccurs="0"/>
+								<xs:element name="ReferenteCartorio" type="xs:string" minOccurs="0"/>
+								<xs:element name="ParteNome" type="xs:string" minOccurs="0"/>
+								<xs:element name="ParteIdentidade" type="xs:string" minOccurs="0"/>
+								<xs:element name="ParteOrgaoEmissor" type="xs:string" minOccurs="0"/>
+								<xs:element name="ParteTipoDocumento" type="xs:string" minOccurs="0"/>
+								<xs:element name="ParteNumeroDocumento" type="xs:string" minOccurs="0"/>
+								<xs:element name="ParteQualidade" type="xs:string" minOccurs="0"/>
+							</xs:sequence>
+						</xs:complexType>
+					</xs:element>
+				</xs:choice>
+			</xs:complexType>
+		</xs:element>
+	</xs:schema>
+	<NewDataSet>
+		<AtoCep>
+			<TipoAtoCep>1</TipoAtoCep>
+			<NaturezaEscritura>6</NaturezaEscritura>
+			<DataAto>2026-02-03</DataAto>
+			<Livro>4</Livro>
+			<LivroComplemento/>
+			<Folha>173</Folha>
+			<FolhaComplemento/>
+			<Valor>0.00</Valor>
+			<ParteNome>VALQUENIO MENDES DA COSTA</ParteNome>
+			<ParteIdentidade/>
+			<ParteOrgaoEmissor/>
+			<ParteTipoDocumento>CPF</ParteTipoDocumento>
+			<ParteNumeroDocumento>78189969153</ParteNumeroDocumento>
+			<ParteQualidade>OUTORGADO</ParteQualidade>
+		</AtoCep>
+		<AtoCep>
+			<TipoAtoCep>1</TipoAtoCep>
+			<NaturezaEscritura>6</NaturezaEscritura>
+			<DataAto>2026-02-03</DataAto>
+			<Livro>4</Livro>
+			<LivroComplemento/>
+			<Folha>173</Folha>
+			<FolhaComplemento/>
+			<Valor>0.00</Valor>
+			<ParteNome>ANDRÉA PEREIRA DA SILVA MENDES</ParteNome>
+			<ParteIdentidade>3.907.696</ParteIdentidade>
+			<ParteOrgaoEmissor>PC</ParteOrgaoEmissor>
+			<ParteTipoDocumento>CPF</ParteTipoDocumento>
+			<ParteNumeroDocumento>01471240185</ParteNumeroDocumento>
+			<ParteQualidade>OUTORGADO</ParteQualidade>
+		</AtoCep>
+		<AtoCep>
+			<TipoAtoCep>1</TipoAtoCep>
+			<NaturezaEscritura>6</NaturezaEscritura>
+			<DataAto>2026-02-03</DataAto>
+			<Livro>4</Livro>
+			<LivroComplemento/>
+			<Folha>173</Folha>
+			<FolhaComplemento/>
+			<Valor>0.00</Valor>
+			<ParteNome>MATEUS CARVALHO PINTO</ParteNome>
+			<ParteIdentidade/>
+			<ParteOrgaoEmissor/>
+			<ParteTipoDocumento>CPF</ParteTipoDocumento>
+			<ParteNumeroDocumento>05180564140</ParteNumeroDocumento>
+			<ParteQualidade>INTERVENIENTE</ParteQualidade>
+		</AtoCep>
+		<AtoCep>
+			<TipoAtoCep>1</TipoAtoCep>
+			<NaturezaEscritura>6</NaturezaEscritura>
+			<DataAto>2026-02-03</DataAto>
+			<Livro>4</Livro>
+			<LivroComplemento/>
+			<Folha>173</Folha>
+			<FolhaComplemento/>
+			<Valor>0.00</Valor>
+			<ParteNome>ADRIANA CARVALHO DE SOUZA</ParteNome>
+			<ParteIdentidade/>
+			<ParteOrgaoEmissor/>
+			<ParteTipoDocumento>CPF</ParteTipoDocumento>
+			<ParteNumeroDocumento>05753891179</ParteNumeroDocumento>
+			<ParteQualidade>OUTORGANTE</ParteQualidade>
+		</AtoCep>
+		<AtoCep>
+			<TipoAtoCep>1</TipoAtoCep>
+			<NaturezaEscritura>6</NaturezaEscritura>
+			<DataAto>2026-02-03</DataAto>
+			<Livro>4</Livro>
+			<LivroComplemento/>
+			<Folha>173</Folha>
+			<FolhaComplemento/>
+			<Valor>0.00</Valor>
+			<ParteNome>VALDNEY MOREIRA DA SILVA</ParteNome>
+			<ParteIdentidade/>
+			<ParteOrgaoEmissor/>
+			<ParteTipoDocumento>CPF</ParteTipoDocumento>
+			<ParteNumeroDocumento>52091325104</ParteNumeroDocumento>
+			<ParteQualidade>OUTORGANTE</ParteQualidade>
+		</AtoCep>
+		<AtoCep>
+			<TipoAtoCep>1</TipoAtoCep>
+			<NaturezaEscritura>6</NaturezaEscritura>
+			<DataAto>2026-02-03</DataAto>
+			<Livro>4</Livro>
+			<LivroComplemento/>
+			<Folha>173</Folha>
+			<FolhaComplemento/>
+			<Valor>0.00</Valor>
+			<ParteNome>VANIA ALVES DE SOUZA</ParteNome>
+			<ParteIdentidade/>
+			<ParteOrgaoEmissor/>
+			<ParteTipoDocumento>CPF</ParteTipoDocumento>
+			<ParteNumeroDocumento>79036651115</ParteNumeroDocumento>
+			<ParteQualidade>OUTORGANTE</ParteQualidade>
+		</AtoCep>
+		<AtoCep>
+			<TipoAtoCep>1</TipoAtoCep>
+			<NaturezaEscritura>53</NaturezaEscritura>
+			<DataAto>2026-02-10</DataAto>
+			<Livro>5</Livro>
+			<LivroComplemento/>
+			<Folha>7</Folha>
+			<FolhaComplemento/>
+			<Valor>0.00</Valor>
+			<ParteNome>NIZE DE SOUZA TOLEDO</ParteNome>
+			<ParteIdentidade>566.055</ParteIdentidade>
+			<ParteOrgaoEmissor>SSP</ParteOrgaoEmissor>
+			<ParteTipoDocumento>CPF</ParteTipoDocumento>
+			<ParteNumeroDocumento>85304050134</ParteNumeroDocumento>
+			<ParteQualidade>OUTORGANTE</ParteQualidade>
+		</AtoCep>
+		<AtoCep>
+			<TipoAtoCep>1</TipoAtoCep>
+			<NaturezaEscritura>53</NaturezaEscritura>
+			<DataAto>2026-02-10</DataAto>
+			<Livro>5</Livro>
+			<LivroComplemento/>
+			<Folha>7</Folha>
+			<FolhaComplemento/>
+			<Valor>0.00</Valor>
+			<ParteNome>NILDE NUNES RIBEIRO</ParteNome>
+			<ParteIdentidade/>
+			<ParteOrgaoEmissor/>
+			<ParteTipoDocumento>CPF</ParteTipoDocumento>
+			<ParteNumeroDocumento>01073810100</ParteNumeroDocumento>
+			<ParteQualidade>OUTORGANTE</ParteQualidade>
+		</AtoCep>
+		<AtoCep>
+			<TipoAtoCep>1</TipoAtoCep>
+			<NaturezaEscritura>53</NaturezaEscritura>
+			<DataAto>2026-02-10</DataAto>
+			<Livro>5</Livro>
+			<LivroComplemento/>
+			<Folha>7</Folha>
+			<FolhaComplemento/>
+			<Valor>0.00</Valor>
+			<ParteNome>AZARIAS RIBEIRO DA SILVA</ParteNome>
+			<ParteIdentidade/>
+			<ParteOrgaoEmissor/>
+			<ParteTipoDocumento>CPF</ParteTipoDocumento>
+			<ParteNumeroDocumento>12606634187</ParteNumeroDocumento>
+			<ParteQualidade>OUTORGANTE</ParteQualidade>
+		</AtoCep>
+		<AtoCep>
+			<TipoAtoCep>1</TipoAtoCep>
+			<NaturezaEscritura>53</NaturezaEscritura>
+			<DataAto>2026-02-10</DataAto>
+			<Livro>5</Livro>
+			<LivroComplemento/>
+			<Folha>7</Folha>
+			<FolhaComplemento/>
+			<Valor>0.00</Valor>
+			<ParteNome>ELEAZAR NUNES DE SOUSA</ParteNome>
+			<ParteIdentidade/>
+			<ParteOrgaoEmissor/>
+			<ParteTipoDocumento/>
+			<ParteNumeroDocumento/>
+			<ParteQualidade>OUTORGANTE</ParteQualidade>
+		</AtoCep>
+		<AtoCep>
+			<TipoAtoCep>1</TipoAtoCep>
+			<NaturezaEscritura>53</NaturezaEscritura>
+			<DataAto>2026-02-10</DataAto>
+			<Livro>5</Livro>
+			<LivroComplemento/>
+			<Folha>7</Folha>
+			<FolhaComplemento/>
+			<Valor>0.00</Valor>
+			<ParteNome>WANDER NUNES DE SOUSA</ParteNome>
+			<ParteIdentidade/>
+			<ParteOrgaoEmissor/>
+			<ParteTipoDocumento>CPF</ParteTipoDocumento>
+			<ParteNumeroDocumento>47704802453</ParteNumeroDocumento>
+			<ParteQualidade>OUTORGANTE</ParteQualidade>
+		</AtoCep>
+		<AtoCep>
+			<TipoAtoCep>1</TipoAtoCep>
+			<NaturezaEscritura>53</NaturezaEscritura>
+			<DataAto>2026-02-10</DataAto>
+			<Livro>5</Livro>
+			<LivroComplemento/>
+			<Folha>7</Folha>
+			<FolhaComplemento/>
+			<Valor>0.00</Valor>
+			<ParteNome>NAGMA SIMÕES DE OLIVEIRA SOUSA</ParteNome>
+			<ParteIdentidade>1.344.858</ParteIdentidade>
+			<ParteOrgaoEmissor>SSP</ParteOrgaoEmissor>
+			<ParteTipoDocumento>CPF</ParteTipoDocumento>
+			<ParteNumeroDocumento>54879957100</ParteNumeroDocumento>
+			<ParteQualidade>OUTORGANTE</ParteQualidade>
+		</AtoCep>
+		<AtoCep>
+			<TipoAtoCep>1</TipoAtoCep>
+			<NaturezaEscritura>53</NaturezaEscritura>
+			<DataAto>2026-02-10</DataAto>
+			<Livro>5</Livro>
+			<LivroComplemento/>
+			<Folha>7</Folha>
+			<FolhaComplemento/>
+			<Valor>0.00</Valor>
+			<ParteNome>VALDIR NUNES DE SOUSA</ParteNome>
+			<ParteIdentidade>1.408.468</ParteIdentidade>
+			<ParteOrgaoEmissor>SSP</ParteOrgaoEmissor>
+			<ParteTipoDocumento>CPF</ParteTipoDocumento>
+			<ParteNumeroDocumento>30504325191</ParteNumeroDocumento>
+			<ParteQualidade>OUTORGANTE</ParteQualidade>
+		</AtoCep>
+		<AtoCep>
+			<TipoAtoCep>1</TipoAtoCep>
+			<NaturezaEscritura>53</NaturezaEscritura>
+			<DataAto>2026-02-10</DataAto>
+			<Livro>5</Livro>
+			<LivroComplemento/>
+			<Folha>7</Folha>
+			<FolhaComplemento/>
+			<Valor>0.00</Valor>
+			<ParteNome>MARIA DE JESUS TEIXEIRA DE MOURA</ParteNome>
+			<ParteIdentidade/>
+			<ParteOrgaoEmissor/>
+			<ParteTipoDocumento>CPF</ParteTipoDocumento>
+			<ParteNumeroDocumento>90286090163</ParteNumeroDocumento>
+			<ParteQualidade>ANUENTE</ParteQualidade>
+		</AtoCep>
+		<AtoCep>
+			<TipoAtoCep>1</TipoAtoCep>
+			<NaturezaEscritura>53</NaturezaEscritura>
+			<DataAto>2026-02-10</DataAto>
+			<Livro>5</Livro>
+			<LivroComplemento/>
+			<Folha>7</Folha>
+			<FolhaComplemento/>
+			<Valor>0.00</Valor>
+			<ParteNome>VALDIR NUNES DE SOUSA</ParteNome>
+			<ParteIdentidade>1.408.468</ParteIdentidade>
+			<ParteOrgaoEmissor>SSP</ParteOrgaoEmissor>
+			<ParteTipoDocumento>CPF</ParteTipoDocumento>
+			<ParteNumeroDocumento>30504325191</ParteNumeroDocumento>
+			<ParteQualidade>INTERVENIENTE</ParteQualidade>
+		</AtoCep>
+		<AtoCep>
+			<TipoAtoCep>1</TipoAtoCep>
+			<NaturezaEscritura>53</NaturezaEscritura>
+			<DataAto>2026-02-10</DataAto>
+			<Livro>5</Livro>
+			<LivroComplemento/>
+			<Folha>7</Folha>
+			<FolhaComplemento/>
+			<Valor>0.00</Valor>
+			<ParteNome>WALTER NUNES DE SOUZA</ParteNome>
+			<ParteIdentidade/>
+			<ParteOrgaoEmissor/>
+			<ParteTipoDocumento>CPF</ParteTipoDocumento>
+			<ParteNumeroDocumento>19341202191</ParteNumeroDocumento>
+			<ParteQualidade>OUTORGANTE</ParteQualidade>
+		</AtoCep>
+		<AtoCep>
+			<TipoAtoCep>1</TipoAtoCep>
+			<NaturezaEscritura>53</NaturezaEscritura>
+			<DataAto>2026-02-10</DataAto>
+			<Livro>5</Livro>
+			<LivroComplemento/>
+			<Folha>7</Folha>
+			<FolhaComplemento/>
+			<Valor>0.00</Valor>
+			<ParteNome>HELZI NUNES MIRANDA</ParteNome>
+			<ParteIdentidade/>
+			<ParteOrgaoEmissor/>
+			<ParteTipoDocumento>CPF</ParteTipoDocumento>
+			<ParteNumeroDocumento>31084125153</ParteNumeroDocumento>
+			<ParteQualidade>OUTORGANTE</ParteQualidade>
+		</AtoCep>
+		<AtoCep>
+			<TipoAtoCep>1</TipoAtoCep>
+			<NaturezaEscritura>53</NaturezaEscritura>
+			<DataAto>2026-02-10</DataAto>
+			<Livro>5</Livro>
+			<LivroComplemento/>
+			<Folha>7</Folha>
+			<FolhaComplemento/>
+			<Valor>0.00</Valor>
+			<ParteNome>NILDE NUNES RIBEIRO</ParteNome>
+			<ParteIdentidade/>
+			<ParteOrgaoEmissor/>
+			<ParteTipoDocumento>CPF</ParteTipoDocumento>
+			<ParteNumeroDocumento>01073810100</ParteNumeroDocumento>
+			<ParteQualidade>ANUENTE</ParteQualidade>
+		</AtoCep>
+		<AtoCep>
+			<TipoAtoCep>1</TipoAtoCep>
+			<NaturezaEscritura>53</NaturezaEscritura>
+			<DataAto>2026-02-10</DataAto>
+			<Livro>5</Livro>
+			<LivroComplemento/>
+			<Folha>7</Folha>
+			<FolhaComplemento/>
+			<Valor>0.00</Valor>
+			<ParteNome>AZARIAS RIBEIRO DA SILVA</ParteNome>
+			<ParteIdentidade/>
+			<ParteOrgaoEmissor/>
+			<ParteTipoDocumento>CPF</ParteTipoDocumento>
+			<ParteNumeroDocumento>12606634187</ParteNumeroDocumento>
+			<ParteQualidade>ANUENTE</ParteQualidade>
+		</AtoCep>
+		<AtoCep>
+			<TipoAtoCep>1</TipoAtoCep>
+			<NaturezaEscritura>53</NaturezaEscritura>
+			<DataAto>2026-02-10</DataAto>
+			<Livro>5</Livro>
+			<LivroComplemento/>
+			<Folha>7</Folha>
+			<FolhaComplemento/>
+			<Valor>0.00</Valor>
+			<ParteNome>HELZI NUNES MIRANDA</ParteNome>
+			<ParteIdentidade/>
+			<ParteOrgaoEmissor/>
+			<ParteTipoDocumento>CPF</ParteTipoDocumento>
+			<ParteNumeroDocumento>31084125153</ParteNumeroDocumento>
+			<ParteQualidade>INTERVENIENTE</ParteQualidade>
+		</AtoCep>
+		<AtoCep>
+			<TipoAtoCep>1</TipoAtoCep>
+			<NaturezaEscritura>53</NaturezaEscritura>
+			<DataAto>2026-02-10</DataAto>
+			<Livro>5</Livro>
+			<LivroComplemento/>
+			<Folha>7</Folha>
+			<FolhaComplemento/>
+			<Valor>0.00</Valor>
+			<ParteNome>VALDIR NUNES DE SOUSA</ParteNome>
+			<ParteIdentidade>1.408.468</ParteIdentidade>
+			<ParteOrgaoEmissor>SSP</ParteOrgaoEmissor>
+			<ParteTipoDocumento>CPF</ParteTipoDocumento>
+			<ParteNumeroDocumento>30504325191</ParteNumeroDocumento>
+			<ParteQualidade>ANUENTE</ParteQualidade>
+		</AtoCep>
+		<AtoCep>
+			<TipoAtoCep>1</TipoAtoCep>
+			<NaturezaEscritura>53</NaturezaEscritura>
+			<DataAto>2026-02-10</DataAto>
+			<Livro>5</Livro>
+			<LivroComplemento/>
+			<Folha>7</Folha>
+			<FolhaComplemento/>
+			<Valor>0.00</Valor>
+			<ParteNome>VILMA TRISTÃO DE MOURA</ParteNome>
+			<ParteIdentidade/>
+			<ParteOrgaoEmissor/>
+			<ParteTipoDocumento>CPF</ParteTipoDocumento>
+			<ParteNumeroDocumento>33690812100</ParteNumeroDocumento>
+			<ParteQualidade>ANUENTE</ParteQualidade>
+		</AtoCep>
+		<AtoCep>
+			<TipoAtoCep>1</TipoAtoCep>
+			<NaturezaEscritura>53</NaturezaEscritura>
+			<DataAto>2026-02-10</DataAto>
+			<Livro>5</Livro>
+			<LivroComplemento/>
+			<Folha>7</Folha>
+			<FolhaComplemento/>
+			<Valor>0.00</Valor>
+			<ParteNome>WALTER NUNES DE SOUZA</ParteNome>
+			<ParteIdentidade/>
+			<ParteOrgaoEmissor/>
+			<ParteTipoDocumento>CPF</ParteTipoDocumento>
+			<ParteNumeroDocumento>19341202191</ParteNumeroDocumento>
+			<ParteQualidade>INTERVENIENTE</ParteQualidade>
+		</AtoCep>
+		<AtoCep>
+			<TipoAtoCep>2</TipoAtoCep>
+			<DataAto>2026-02-05</DataAto>
+			<Livro>2</Livro>
+			<LivroComplemento/>
+			<Folha>73</Folha>
+			<FolhaComplemento/>
+			<Valor>0.00</Valor>
+			<ParteNome>CARLOS DIAS ROCHA</ParteNome>
+			<ParteIdentidade/>
+			<ParteOrgaoEmissor/>
+			<ParteTipoDocumento>CPF</ParteTipoDocumento>
+			<ParteNumeroDocumento>79130755115</ParteNumeroDocumento>
+			<ParteQualidade>OUTORGADO</ParteQualidade>
+		</AtoCep>
+		<AtoCep>
+			<TipoAtoCep>2</TipoAtoCep>
+			<DataAto>2026-02-05</DataAto>
+			<Livro>2</Livro>
+			<LivroComplemento/>
+			<Folha>73</Folha>
+			<FolhaComplemento/>
+			<Valor>0.00</Valor>
+			<ParteNome>SÃO CARLOS ELETRO E MODAS LTDA</ParteNome>
+			<ParteIdentidade/>
+			<ParteOrgaoEmissor/>
+			<ParteTipoDocumento>CNPJ</ParteTipoDocumento>
+			<ParteNumeroDocumento>22681935000113</ParteNumeroDocumento>
+			<ParteQualidade>OUTORGANTE</ParteQualidade>
+		</AtoCep>
+		<AtoCep>
+			<TipoAtoCep>2</TipoAtoCep>
+			<DataAto>2026-02-05</DataAto>
+			<Livro>2</Livro>
+			<LivroComplemento/>
+			<Folha>73</Folha>
+			<FolhaComplemento/>
+			<Valor>0.00</Valor>
+			<ParteNome>GUSTAVO LOPES DE PAULO</ParteNome>
+			<ParteIdentidade/>
+			<ParteOrgaoEmissor/>
+			<ParteTipoDocumento>CPF</ParteTipoDocumento>
+			<ParteNumeroDocumento>05816419145</ParteNumeroDocumento>
+			<ParteQualidade>INTERVENIENTE</ParteQualidade>
+		</AtoCep>
+		<AtoCep>
+			<TipoAtoCep>2</TipoAtoCep>
+			<DataAto>2026-02-04</DataAto>
+			<Livro>2</Livro>
+			<LivroComplemento/>
+			<Folha>69</Folha>
+			<FolhaComplemento/>
+			<Valor>0.00</Valor>
+			<ParteNome>ALEX GUSTAVO COSTA</ParteNome>
+			<ParteIdentidade/>
+			<ParteOrgaoEmissor/>
+			<ParteTipoDocumento>CPF</ParteTipoDocumento>
+			<ParteNumeroDocumento>03663878120</ParteNumeroDocumento>
+			<ParteQualidade>OUTORGANTE</ParteQualidade>
+		</AtoCep>
+		<AtoCep>
+			<TipoAtoCep>2</TipoAtoCep>
+			<DataAto>2026-02-04</DataAto>
+			<Livro>2</Livro>
+			<LivroComplemento/>
+			<Folha>69</Folha>
+			<FolhaComplemento/>
+			<Valor>0.00</Valor>
+			<ParteNome>NILTON PEREIRA DE JESUS</ParteNome>
+			<ParteIdentidade/>
+			<ParteOrgaoEmissor/>
+			<ParteTipoDocumento>CPF</ParteTipoDocumento>
+			<ParteNumeroDocumento>00344418162</ParteNumeroDocumento>
+			<ParteQualidade>OUTORGADO</ParteQualidade>
+		</AtoCep>
+		<AtoCep>
+			<TipoAtoCep>2</TipoAtoCep>
+			<DataAto>2026-02-04</DataAto>
+			<Livro>2</Livro>
+			<LivroComplemento/>
+			<Folha>71</Folha>
+			<FolhaComplemento/>
+			<Valor>0.00</Valor>
+			<ParteNome>ABADIA CLARICE SANTANA DA SILVA</ParteNome>
+			<ParteIdentidade/>
+			<ParteOrgaoEmissor/>
+			<ParteTipoDocumento/>
+			<ParteNumeroDocumento/>
+			<ParteQualidade>OUTORGANTE</ParteQualidade>
+		</AtoCep>
+		<AtoCep>
+			<TipoAtoCep>2</TipoAtoCep>
+			<DataAto>2026-02-04</DataAto>
+			<Livro>2</Livro>
+			<LivroComplemento/>
+			<Folha>71</Folha>
+			<FolhaComplemento/>
+			<Valor>0.00</Valor>
+			<ParteNome>ADAO VIDAL DA SILVA</ParteNome>
+			<ParteIdentidade/>
+			<ParteOrgaoEmissor/>
+			<ParteTipoDocumento>CPF</ParteTipoDocumento>
+			<ParteNumeroDocumento>19567189153</ParteNumeroDocumento>
+			<ParteQualidade>OUTORGANTE</ParteQualidade>
+		</AtoCep>
+		<AtoCep>
+			<TipoAtoCep>2</TipoAtoCep>
+			<DataAto>2026-02-04</DataAto>
+			<Livro>2</Livro>
+			<LivroComplemento/>
+			<Folha>71</Folha>
+			<FolhaComplemento/>
+			<Valor>0.00</Valor>
+			<ParteNome>LUCIA DIAS DA CUNHA</ParteNome>
+			<ParteIdentidade/>
+			<ParteOrgaoEmissor/>
+			<ParteTipoDocumento>CPF</ParteTipoDocumento>
+			<ParteNumeroDocumento>51998254100</ParteNumeroDocumento>
+			<ParteQualidade>OUTORGADO</ParteQualidade>
+		</AtoCep>
+		<AtoCep>
+			<TipoAtoCep>1</TipoAtoCep>
+			<NaturezaEscritura>6</NaturezaEscritura>
+			<DataAto>2026-02-04</DataAto>
+			<Livro>4</Livro>
+			<LivroComplemento/>
+			<Folha>176</Folha>
+			<FolhaComplemento/>
+			<Valor>0.00</Valor>
+			<ParteNome>ADILSON DIAS SOUTO</ParteNome>
+			<ParteIdentidade>5.375.010</ParteIdentidade>
+			<ParteOrgaoEmissor>SPTC</ParteOrgaoEmissor>
+			<ParteTipoDocumento>CPF</ParteTipoDocumento>
+			<ParteNumeroDocumento>03267921120</ParteNumeroDocumento>
+			<ParteQualidade>OUTORGANTE</ParteQualidade>
+		</AtoCep>
+		<AtoCep>
+			<TipoAtoCep>1</TipoAtoCep>
+			<NaturezaEscritura>6</NaturezaEscritura>
+			<DataAto>2026-02-04</DataAto>
+			<Livro>4</Livro>
+			<LivroComplemento/>
+			<Folha>176</Folha>
+			<FolhaComplemento/>
+			<Valor>0.00</Valor>
+			<ParteNome>RUTH CÂNDIDA DO NASCIMENTO</ParteNome>
+			<ParteIdentidade>4.866.179-2° via</ParteIdentidade>
+			<ParteOrgaoEmissor>SSP</ParteOrgaoEmissor>
+			<ParteTipoDocumento>CPF</ParteTipoDocumento>
+			<ParteNumeroDocumento>01024869130</ParteNumeroDocumento>
+			<ParteQualidade>OUTORGADO</ParteQualidade>
+		</AtoCep>
+		<AtoCep>
+			<TipoAtoCep>1</TipoAtoCep>
+			<NaturezaEscritura>6</NaturezaEscritura>
+			<DataAto>2026-02-05</DataAto>
+			<Livro>4</Livro>
+			<LivroComplemento/>
+			<Folha>179</Folha>
+			<FolhaComplemento/>
+			<Valor>0.00</Valor>
+			<ParteNome>VERTEX GROUP PATRIMONIAL LTDA</ParteNome>
+			<ParteIdentidade/>
+			<ParteOrgaoEmissor/>
+			<ParteTipoDocumento>CNPJ</ParteTipoDocumento>
+			<ParteNumeroDocumento>64886024000172</ParteNumeroDocumento>
+			<ParteQualidade>OUTORGADO</ParteQualidade>
+		</AtoCep>
+		<AtoCep>
+			<TipoAtoCep>1</TipoAtoCep>
+			<NaturezaEscritura>6</NaturezaEscritura>
+			<DataAto>2026-02-05</DataAto>
+			<Livro>4</Livro>
+			<LivroComplemento/>
+			<Folha>179</Folha>
+			<FolhaComplemento/>
+			<Valor>0.00</Valor>
+			<ParteNome>KEZIA DA SILVA SANTOS RAMOS</ParteNome>
+			<ParteIdentidade/>
+			<ParteOrgaoEmissor/>
+			<ParteTipoDocumento>CPF</ParteTipoDocumento>
+			<ParteNumeroDocumento>00617732124</ParteNumeroDocumento>
+			<ParteQualidade>INTERVENIENTE</ParteQualidade>
+		</AtoCep>
+		<AtoCep>
+			<TipoAtoCep>1</TipoAtoCep>
+			<NaturezaEscritura>6</NaturezaEscritura>
+			<DataAto>2026-02-05</DataAto>
+			<Livro>4</Livro>
+			<LivroComplemento/>
+			<Folha>179</Folha>
+			<FolhaComplemento/>
+			<Valor>0.00</Valor>
+			<ParteNome>JOEL DUARTE SANTOS</ParteNome>
+			<ParteIdentidade>3.131.464</ParteIdentidade>
+			<ParteOrgaoEmissor>DGPC</ParteOrgaoEmissor>
+			<ParteTipoDocumento>CPF</ParteTipoDocumento>
+			<ParteNumeroDocumento>57625034100</ParteNumeroDocumento>
+			<ParteQualidade>OUTORGANTE</ParteQualidade>
+		</AtoCep>
+		<AtoCep>
+			<TipoAtoCep>1</TipoAtoCep>
+			<NaturezaEscritura>6</NaturezaEscritura>
+			<DataAto>2026-02-05</DataAto>
+			<Livro>4</Livro>
+			<LivroComplemento/>
+			<Folha>179</Folha>
+			<FolhaComplemento/>
+			<Valor>0.00</Valor>
+			<ParteNome>ROSANGELA PEREIRA DA SILVA DUARTE</ParteNome>
+			<ParteIdentidade/>
+			<ParteOrgaoEmissor/>
+			<ParteTipoDocumento>CPF</ParteTipoDocumento>
+			<ParteNumeroDocumento>02724691148</ParteNumeroDocumento>
+			<ParteQualidade>OUTORGANTE</ParteQualidade>
+		</AtoCep>
+	</NewDataSet>
+</NewDataSet>

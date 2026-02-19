@@ -126,36 +126,70 @@
             },
             "response": []
         },
-		{
-			"name": "5. Validar e Corrigir DOI (JSON)",
-			"request": {
-				"method": "POST",
-				"header": [],
-				"body": {
-					"mode": "formdata",
-					"formdata": [
-						{
-							"key": "file",
-							"type": "file",
-							"description": "Selecione o arquivo .json da Declaração DOI"
-						}
-					]
-				},
-				"url": {
-					"raw": "{{base_url}}/api/converter/doi",
-					"host": [
-						"{{base_url}}"
-					],
-					"path": [
-						"api",
-						"converter",
-						"doi"
-					]
-				},
-				"description": "Valida estrutura (Schema) e regras de negócio (CPF, CNPJ, CIB) de um arquivo DOI, aplicando correções automáticas de tipagem."
-			},
-			"response": []
-		}
+        {
+            "name": "5. Validar e Corrigir DOI (JSON)",
+            "request": {
+                "method": "POST",
+                "header": [],
+                "body": {
+                    "mode": "formdata",
+                    "formdata": [
+                        {
+                            "key": "file",
+                            "type": "file",
+                            "description": "Selecione o arquivo .json da Declaração DOI"
+                        }
+                    ]
+                },
+                "url": {
+                    "raw": "{{base_url}}/api/converter/doi",
+                    "host": [
+                        "{{base_url}}"
+                    ],
+                    "path": [
+                        "api",
+                        "converter",
+                        "doi"
+                    ]
+                },
+                "description": "Valida estrutura (Schema) e regras de negócio (CPF, CNPJ, CIB) de um arquivo DOI, aplicando correções automáticas de tipagem."
+            },
+            "response": []
+        },
+        {
+            "name": "6. Comparar Guia Sistema vs CSV",
+            "request": {
+                "method": "POST",
+                "header": [],
+                "body": {
+                    "mode": "formdata",
+                    "formdata": [
+                        {
+                            "key": "pdf",
+                            "type": "file",
+                            "description": "Arquivo PDF da Guia do Sistema (Texto)"
+                        },
+                        {
+                            "key": "csv",
+                            "type": "file",
+                            "description": "Arquivo CSV da Guia de Itens (SEE)"
+                        }
+                    ]
+                },
+                "url": {
+                    "raw": "{{base_url}}/api/comparar-guias",
+                    "host": [
+                        "{{base_url}}"
+                    ],
+                    "path": [
+                        "api",
+                        "comparar-guias"
+                    ]
+                },
+                "description": "Realiza a auditoria cruzada entre o PDF do sistema interno e o CSV do sistema externo, retornando um relatório detalhado de divergências financeiras e de quantidade."
+            },
+            "response": []
+        }
     ],
     "event": [
         {

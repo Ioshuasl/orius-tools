@@ -2,6 +2,8 @@ import express from 'express';
 import cors from 'cors';
 import swaggerUi from 'swagger-ui-express'; // Importar UI
 import converterRoutes from './routes/converterRoutes.js';
+import comparisonRoutes from './routes/comparisonRoutes.js';
+import censecRoutes from './routes/censecRoutes.js';
 import { swaggerSpec } from './config/swagger.js'; // Importar Config
 
 const app = express();
@@ -16,6 +18,8 @@ app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec));
 
 // Rotas da API
 app.use('/api/converter', converterRoutes);
+app.use('/api/comparar', comparisonRoutes);
+app.use('/api/censec', censecRoutes);
 
 // Rota de Health Check
 app.get('/', (req, res) => {
@@ -30,7 +34,7 @@ app.get('/', (req, res) => {
 // Inicialização
 app.listen(PORT, () => {
     console.log(`=============================================`);
-    console.log(`🚀 Orius Converter API rodando na porta ${PORT}`);
+    console.log(`🚀 Orius Tools API rodando na porta ${PORT}`);
     console.log(`📄 Documentação Swagger: http://localhost:${PORT}/api-docs`);
     console.log(`=============================================`);
 });
