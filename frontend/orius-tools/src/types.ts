@@ -93,3 +93,38 @@ export interface ApiResponseCensec {
   total_erros: number;
   erros: ErroCensec[];
 }
+
+// src/types.ts
+
+export type BlockType = 'text' | 'h1' | 'h2' | 'h3' | 'image' | 'video' | 'code' | 'table' | 'page' | 'bullet_list' | 'numbered_list' | 'quote' | 'divider';
+
+export interface Block {
+  id: string;
+  type: BlockType;
+  data: any; // Depende do tipo de bloco (ex: { text: "..." } ou { url: "..." })
+}
+
+export interface BreadcrumbItem {
+  id: string;
+  title: string;
+}
+
+export interface CommunityPage {
+  id: string;
+  title: string;
+  system: string | null;
+  tags: string[];
+  content: Block[];
+  parentId: string | null;
+  breadcrumbs?: BreadcrumbItem[];
+  subPages?: CommunityPage[];
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface ApiResponseCommunity {
+  success: boolean;
+  total?: number;
+  data: CommunityPage | CommunityPage[];
+  message?: string;
+}

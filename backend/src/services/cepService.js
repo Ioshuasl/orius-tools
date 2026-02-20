@@ -51,7 +51,6 @@ export const validarXmlCep = async (filePath) => {
     }
 
     // --- PASSO 1: AGRUPAMENTO (Chave de Unicidade) ---
-    // A chave de unicidade é Livro + LivroComplemento + Folha + FolhaComplemento
     for (let i = 0; i < atosNodeList.length; i++) {
         const node = atosNodeList[i];
         const linha = node.lineNumber;
@@ -82,7 +81,6 @@ export const validarXmlCep = async (filePath) => {
 
         const ato = atosAgrupados.get(chave);
         
-        // Coleta de Partes (Pelo menos uma é obrigatória por ato)
         const pNome = getNodeText(node, "ParteNome");
         if (pNome) {
             ato.partes.push({
@@ -94,7 +92,6 @@ export const validarXmlCep = async (filePath) => {
             });
         }
 
-        // Coleta de Referentes (Obrigatório para Revogações, Renúncias e Rerratificações)
         const refCns = getNodeText(node, "ReferenteCns");
         if (refCns || getNodeText(node, "ReferenteTipoAtoCep")) {
             ato.referentes.push({
@@ -115,38 +112,34 @@ export const validarXmlCep = async (filePath) => {
         // 2.1. Cabeçalho
         if (!ato.tipoAtoCep) addErro(ato.linhaBase, loc, null, "tipoAtoCep é obrigatório.", "Obrigatoriedade", CONSTANTES.TIPOS_ATO);
         
-        // Natureza Escritura: Obrigatório se tipoAtoCep = 1
         if (ato.tipoAtoCep === '1') {
             if (!ato.naturezaEscritura) addErro(ato.linhaBase, loc, null, "naturezaEscritura é obrigatória para Escrituras.", "Obrigatoriedade", CONSTANTES.NATUREZAS_ESCRITURA);
             
-            // Regime de Bens: Obrigatório para Declaratórias/Dissolução (Nat. 15 e 20)
             if (['15', '20'].includes(ato.naturezaEscritura)) {
                 if (!ato.regimeBens) addErro(ato.linhaBase, loc, null, "regimeBens é obrigatório para Declaratórias/Dissolução de União Estável.", "Obrigatoriedade", CONSTANTES.REGIMES_BENS_XML);
             }
 
-            // Mediação/Conciliação (Nat. 75 e 76): NaturezaLitigio e Acordo são obrigatórios
             if (['75', '76'].includes(ato.naturezaEscritura)) {
                 if (!ato.naturezaLitigio) addErro(ato.linhaBase, loc, null, "naturezaLitigio é obrigatória para Mediação/Conciliação.", "Obrigatoriedade", CONSTANTES.NATUREZAS_LITIGIO);
                 if (!ato.acordo) addErro(ato.linhaBase, loc, null, "acordo (SIM/NÃO) é obrigatório para Mediação/Conciliação.", "Obrigatoriedade", ["SIM", "NÃO"]);
             }
         }
 
-        // Usucapião (9): NaturezaAtaNotarialDeUsucapiao é obrigatório
         if (ato.tipoAtoCep === '9' && !ato.naturezaAtaNotarialDeUsucapiao) {
             addErro(ato.linhaBase, loc, null, "naturezaAtaNotarialDeUsucapiao é obrigatória para este ato.", "Obrigatoriedade", CONSTANTES.NATUREZAS_USUCAPIAO);
         }
 
-        // MNE: Obrigatório se eletrônico (29 caracteres)
         if (ato.mne && ato.mne.length !== 29) {
             addErro(ato.linhaBase, loc, null, "mne deve ter exatamente 29 caracteres.", "Formato Inválido");
         }
 
-        if (!ato.data) addErro(ato.linhaBase, loc, null, "data (lavratura) é obrigatória.", "Obrigatoriedade");
+        // Validações de Cabeçalho Obrigatórias Simples
+        if (!ato.data) addErro(ato.linhaBase, loc, null, "A data de lavratura (DataAto) é obrigatória.", "Obrigatoriedade");
         if (!ato.livro) addErro(ato.linhaBase, loc, null, "livro é obrigatório.", "Obrigatoriedade");
         if (!ato.folha) addErro(ato.linhaBase, loc, null, "folha é obrigatória.", "Obrigatoriedade");
         if (!ato.valor) addErro(ato.linhaBase, loc, null, "valor financeiro do ato é obrigatório.", "Obrigatoriedade");
 
-        // 2.2. Referentes (Revogação(6), Renúncia(5), Substabelecimento(7) e Rerratificação(1/35))
+        // 2.2. Referentes
         const exigeRef = ['5', '6', '7'].includes(ato.tipoAtoCep) || (ato.tipoAtoCep === '1' && ato.naturezaEscritura === '35');
         if (exigeRef && ato.referentes.length === 0) {
             addErro(ato.linhaBase, loc, null, "Atos de Revogação, Renúncia, Substabelecimento ou Rerratificação exigem grupo Referentes.", "Regra de Negócio");
@@ -160,13 +153,16 @@ export const validarXmlCep = async (filePath) => {
                 if (!p.tipoDoc) addErro(p.linha, loc, p.nome, "tipoDocumento da parte é obrigatório.", "Obrigatoriedade", CONSTANTES.TIPOS_DOCUMENTO);
                 if (!p.qualidade) addErro(p.linha, loc, p.nome, "qualidade da parte é obrigatória.", "Obrigatoriedade", CONSTANTES.QUALIDADES_PARTE);
                 
-                // Validação de CPF/CNPJ
-                if (p.tipoDoc === 'CPF') {
-                    if (!p.numDoc) addErro(p.linha, loc, p.nome, "Número do CPF não informado.", "Obrigatoriedade");
-                    else if (!isCpfValido(p.numDoc)) addErro(p.linha, loc, p.nome, `CPF informado (${p.numDoc}) é matematicamente inválido.`, "Validação Matemática");
+                // Validação Condicional do Número do Documento
+                const tiposQueExigemDoc = ['CPF', 'CNPJ', 'RNM'];
+                if (tiposQueExigemDoc.includes(p.tipoDoc?.toUpperCase()) && !p.numDoc) {
+                    addErro(p.linha, loc, p.nome, `O número do documento é obrigatório quando o tipo informado é ${p.tipoDoc}.`, "Obrigatoriedade");
+                }
+
+                if (p.tipoDoc?.toUpperCase() === 'CPF' && p.numDoc) {
+                    if (!isCpfValido(p.numDoc)) addErro(p.linha, loc, p.nome, `CPF informado (${p.numDoc}) é matematicamente inválido.`, "Validação Matemática");
                 }
                 
-                // Validação de Qualidade conforme Domínio
                 if (p.qualidade && !CONSTANTES.QUALIDADES_PARTE.includes(p.qualidade.toUpperCase())) {
                     addErro(p.linha, loc, p.nome, `Qualidade '${p.qualidade}' inválida.`, "Domínio Inválido", CONSTANTES.QUALIDADES_PARTE);
                 }

@@ -1,12 +1,13 @@
 import { NavLink } from 'react-router-dom';
-import { FileSearch, Home, Activity, FileSpreadsheet, ShieldCheck } from 'lucide-react';
+import { FileSearch, Home, Activity, FileSpreadsheet, ShieldCheck, MessagesSquare } from 'lucide-react';
 
 export function Sidebar() {
   const menuItems = [
     { path: '/', label: 'Início', icon: Home },
     { path: '/comparador-guias', label: 'Comparador de Guias', icon: FileSearch },
     { path: '/tabela-emolumentos', label: 'Tabela de Emolumentos', icon: FileSpreadsheet },
-    { path: '/validar-censec', label: 'Validador CENSEC', icon: ShieldCheck } // <-- Adicione o item no menu
+    { path: '/validar-censec', label: 'Validador CENSEC', icon: ShieldCheck }, // <-- Adicione o item no menu
+    { path: '/comunidade', label: 'Comunidade Suporte', icon: MessagesSquare },
   ];
 
   return (

@@ -5,13 +5,17 @@ import { AppLayout } from './components/layout/AppLayout';
 import ComparadorGuias from './pages/ComparadorGuias';
 import { ThemeProvider } from './contexts/ThemeContext'; // <-- Adicionado
 import TabelaEmolumentos from './pages/TabelaEmolumentos';
+import ComunidadeSuporte from './pages/ComunidadeSuporte';
+//import EditorComunidade from './pages/EditorComunidade';
 import CepCensec from './pages/CepCensec';
+import EditorComunidade from './pages/EditorComunidade';
 
 const APP_TITLES: Record<string, string> = {
   '/': 'Painel de Controle',
   '/comparador-guias': 'Comparador de Guias',
   '/tabela-emolumentos': 'Tabela de Emolumentos',
-  '/validar-censec': 'Validador CENSEC / CEP', // <-- Adicione o título da rota
+  '/validar-censec': 'Validador CENSEC / CEP',
+  '/comunidade': 'Comunidade de Suporte', // <-- Adicionado
   '/assinatura-digital': 'Assinatura Digital',
   '/configuracoes': 'Configurações',
 };
@@ -39,9 +43,10 @@ function App() {
           <Route path="/" element={<AppLayout routeTitles={APP_TITLES} />}>
             <Route index element={<Home />} />
             <Route path="comparador-guias" element={<ComparadorGuias />} />
-            <Route path="tabela-emolumentos" element={<TabelaEmolumentos />} /> 
+            <Route path="tabela-emolumentos" element={<TabelaEmolumentos />} />
             <Route path="validar-censec" element={<CepCensec />} /> {/* <-- Adicione a nova rota */}
-            
+            <Route path="comunidade" element={<ComunidadeSuporte />} />
+            <Route path="comunidade/editor/:id" element={<EditorComunidade />} />
             <Route path="*" element={<Navigate to="/" replace />} />
           </Route>
         </Routes>

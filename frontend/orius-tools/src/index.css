@@ -1,4 +1,5 @@
 @import "tailwindcss";
+@plugin "@tailwindcss/typography";
 
 /* Ensina o Tailwind v4 a aplicar o modo escuro quando a classe .dark estiver presente no HTML */
 @custom-variant dark (&:where(.dark, .dark *));
@@ -10,4 +11,20 @@ body {
 /* Base global para quando estiver no modo escuro */
 .dark body {
   @apply bg-gray-900 text-gray-100;
+}
+
+/* Garante que os marcadores apareçam dentro do editor */
+.list-disc {
+  list-style-type: disc !important;
+  margin-left: 1.5rem !important;
+}
+
+.list-decimal {
+  list-style-type: decimal !important;
+  margin-left: 1.5rem !important;
+}
+
+/* Garante que o item da lista tenha o comportamento visual correto */
+[contenteditable].list-disc, [contenteditable].list-decimal {
+  display: list-item;
 }

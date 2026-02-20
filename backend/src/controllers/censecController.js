@@ -1,7 +1,5 @@
 import fs from 'fs';
-import { validarXmlCep } from '../services/cepService.js';
-import { aplicarCorrecoesXml } from '../services/cepService.js';
-import { DOMParser, XMLSerializer } from 'xmldom';
+import { validarXmlCep, aplicarCorrecoesXml } from '../services/cepService.js';
 
 export const validarCensecXml = async (req, res) => {
     if (!req.file) {
@@ -9,11 +7,9 @@ export const validarCensecXml = async (req, res) => {
     }
 
     try {
-        console.log(`📥 [CENSEC] Validando XML: ${req.file.originalname}`);
-        
         const result = await validarXmlCep(req.file.path);
         
-        // Limpar arquivo temporário
+        // Limpeza imediata do arquivo
         try { fs.unlinkSync(req.file.path); } catch(e) {}
 
         res.json({
@@ -22,33 +18,33 @@ export const validarCensecXml = async (req, res) => {
             total_erros: result.erros.length,
             erros: result.erros
         });
-
     } catch (error) {
-        console.error('❌ Erro na validação CENSEC:', error);
-        try { fs.unlinkSync(req.file.path); } catch(e) {}
-        res.status(500).json({ error: 'Erro interno ao validar XML CENSEC.', details: error.message });
+        if (req.file) try { fs.unlinkSync(req.file.path); } catch(e) {}
+        res.status(500).json({ error: 'Erro ao validar XML CENSEC.', details: error.message });
     }
 };
 
 export const corrigirCensecXml = async (req, res) => {
-    // Com upload.any(), os arquivos ficam em req.files
+    // Busca o arquivo no array gerado pelo upload.any()
     const file = req.files ? req.files.find(f => f.fieldname === 'file') : null;
 
     if (!file || !req.body.correcoes) {
-        return res.status(400).json({ error: 'Arquivo e correções são obrigatórios.' });
+        return res.status(400).json({ error: 'Faltam o arquivo ou as instruções de correção.' });
     }
 
     try {
+        // As correções vêm como string do FormData
         const listaCorrecoes = JSON.parse(req.body.correcoes);
+        
         const xmlCorrigido = await aplicarCorrecoesXml(file.path, listaCorrecoes);
         
-        // Limpeza
         try { fs.unlinkSync(file.path); } catch(e) {}
 
+        // Define o tipo de retorno como XML
         res.set('Content-Type', 'text/xml');
         res.send(xmlCorrigido);
     } catch (error) {
         if (file) try { fs.unlinkSync(file.path); } catch(e) {}
-        res.status(500).json({ error: error.message });
+        res.status(500).json({ error: 'Erro ao processar correções.', details: error.message });
     }
 };
