@@ -1,9 +1,3 @@
-Com certeza! Abaixo apresento uma documentação técnica completa, estruturada e profissional para o **Orius Tools API**.
-
-Você pode copiar este conteúdo diretamente para o seu arquivo `README.md`. Ele cobre desde a arquitetura até os detalhes dos contratos de interface (endpoints), ideal para a equipe de desenvolvimento e para manutenção futura.
-
----
-
 # 🛠️ Orius Tools API
 
 > **Versão:** 1.0.0

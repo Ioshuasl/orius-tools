@@ -28,3 +28,13 @@ body {
 [contenteditable].list-disc, [contenteditable].list-decimal {
   display: list-item;
 }
+
+.editor-content {
+  counter-reset: numbered-list;
+}
+
+.numbered-list-item {
+  counter-increment: numbered-list;
+  display: list-item;
+  list-style-type: decimal;
+}

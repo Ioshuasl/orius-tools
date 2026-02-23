@@ -1,6 +1,7 @@
 @import "tailwindcss";
 @plugin "@tailwindcss/typography";
 
+
 /* Ensina o Tailwind v4 a aplicar o modo escuro quando a classe .dark estiver presente no HTML */
 @custom-variant dark (&:where(.dark, .dark *));
 
@@ -27,4 +28,14 @@ body {
 /* Garante que o item da lista tenha o comportamento visual correto */
 [contenteditable].list-disc, [contenteditable].list-decimal {
   display: list-item;
+}
+
+.editor-content {
+  counter-reset: numbered-list;
+}
+
+.numbered-list-item {
+  counter-increment: numbered-list;
+  display: list-item;
+  list-style-type: decimal;
 }
