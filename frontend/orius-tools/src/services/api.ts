@@ -4,7 +4,7 @@ import type { ApiResponse, ApiResponseCensec, ApiResponseCommunity, ApiResponseT
 // Criação da instância do Axios
 export const api = axios.create({
   // Tenta pegar do .env, se não existir usa localhost
-  baseURL: import.meta.env.VITE_API_URL || 'http://localhost:3000/api',
+  baseURL: import.meta.env.VITE_API_URL || 'http://192.168.1.140:3000/api',
   timeout: 30000, // 30 segundos (upload de arquivos pode demorar)
 });
 
@@ -12,25 +12,20 @@ export const api = axios.create({
  * Função específica para enviar os arquivos para comparação.
  * O endpoint espera Multipart Form Data.
  */
+// src/services/api.ts
 export const compararGuiasService = async (
   arquivoPdf: File, 
   arquivoCsv: File
 ): Promise<ApiResponse> => {
-  
   const formData = new FormData();
-  
-  // Os nomes 'pdf' e 'csv' devem bater com o que o seu backend (Multer/Busboy) espera
   formData.append('pdf', arquivoPdf);
   formData.append('csv', arquivoCsv); 
 
-  // Observação: Ao enviar FormData, o navegador define automaticamente 
-  // o 'Content-Type': 'multipart/form-data' com o boundary correto.
-  // Não precisamos forçar o header aqui na maioria dos casos, mas para garantir:
   const response = await api.post<ApiResponse>('/comparar/comparar-guias', formData, {
-    headers: {
-      'Content-Type': 'multipart/form-data',
-    },
+    headers: { 'Content-Type': 'multipart/form-data' },
   });
+
+  console.log('Resposta da comparação:', response.data); // Log para depuração
 
   return response.data;
 };
@@ -70,14 +65,17 @@ export const validarCepService = async (arquivoXml: File): Promise<ApiResponseCe
 /**
  * Envia o XML e a lista de correções para gerar um novo XML corrigido
  */
+/**
+ * Envia o XML e a lista de correções para gerar um novo XML corrigido
+ * Agora retorna o Blob e informações de validação do header
+ */
+// api.ts - Altere a captura dos headers
 export const corrigirCepService = async (
   arquivoXml: File,
   correcoes: InstrucaoCorrecao[]
-): Promise<Blob> => {
+): Promise<{ data: Blob; valid: boolean; errorCount: number }> => {
   const formData = new FormData();
-  formData.append('file', arquivoXml); // Nome do campo deve ser 'file'
-  
-  // Envie como string simples em vez de Blob
+  formData.append('file', arquivoXml);
   formData.append('correcoes', JSON.stringify(correcoes)); 
 
   const response = await api.post('/censec/corrigir-cep', formData, {
@@ -85,7 +83,18 @@ export const corrigirCepService = async (
     responseType: 'blob',
   });
 
-  return response.data;
+  // Pegamos os valores brutos
+  const successHeader = response.headers['x-validation-success'];
+  const errorCount = parseInt(response.headers['x-validation-errors'] || '0', 10);
+
+  // Lógica de segurança: é válido se o header diz true OU se o contador de erros é zero
+  const isActuallyValid = successHeader === 'true' || successHeader === true || errorCount === 0;
+
+  return {
+    data: response.data,
+    valid: isActuallyValid,
+    errorCount: errorCount
+  };
 };
 
 /**
@@ -148,4 +157,51 @@ export const deletePageService = async (id: string): Promise<ApiResponseCommunit
  */
 export const getBreadcrumbsService = (id: string) => {
   return api.get(`/community/pages/${id}/breadcrumbs`);
+};
+
+// Adicione estes novos serviços ao seu arquivo api.ts
+
+/**
+ * CESDI - Validação Inicial
+ */
+export const validarCesdiService = async (arquivoXml: File): Promise<ApiResponseCensec> => {
+  const formData = new FormData();
+  formData.append('file', arquivoXml);
+
+  const response = await api.post<ApiResponseCensec>('/censec/validar-cesdi', formData, {
+    headers: { 'Content-Type': 'multipart/form-data' }
+  });
+  console.log(response.data)
+  return response.data;
+};
+
+/**
+ * CESDI - Correção e Re-validação
+ * Retorna o XML (Blob) e o status da nova validação via headers
+ */
+export const corrigirCesdiService = async (
+  arquivoXml: File,
+  correcoes: InstrucaoCorrecao[]
+): Promise<{ data: Blob; success: boolean; errorCount: number }> => {
+  
+  const formData = new FormData();
+  formData.append('file', arquivoXml);
+  formData.append('correcoes', JSON.stringify(correcoes));
+
+  const response = await api.post('/censec/corrigir-cesdi', formData, {
+    headers: { 'Content-Type': 'multipart/form-data' },
+    responseType: 'blob' // Necessário para baixar o arquivo
+  });
+
+  // Captura os headers que configuramos no CensecController
+  const success = response.headers['x-validation-success'] === 'true';
+  const errorCount = parseInt(response.headers['x-validation-errors'] || '0', 10);
+
+  console.log(response.data)
+
+  return {
+    data: response.data,
+    success,
+    errorCount
+  };
 };

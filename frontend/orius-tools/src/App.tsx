@@ -9,12 +9,14 @@ import ComunidadeSuporte from './pages/ComunidadeSuporte';
 //import EditorComunidade from './pages/EditorComunidade';
 import CepCensec from './pages/CepCensec';
 import EditorComunidade from './pages/EditorComunidade';
+import CesdiCensec from './pages/CesdiCensec';
 
 const APP_TITLES: Record<string, string> = {
   '/': 'Painel de Controle',
   '/comparador-guias': 'Comparador de Guias',
   '/tabela-emolumentos': 'Tabela de Emolumentos',
-  '/validar-censec': 'Validador CENSEC / CEP',
+  '/validar-cep': 'Validador CENSEC / CEP',
+  '/validar-cesdi': 'Validador CENSEC / CESDI',
   '/comunidade': 'Comunidade de Suporte', // <-- Adicionado
   '/assinatura-digital': 'Assinatura Digital',
   '/configuracoes': 'Configurações',
@@ -44,7 +46,8 @@ function App() {
             <Route index element={<Home />} />
             <Route path="comparador-guias" element={<ComparadorGuias />} />
             <Route path="tabela-emolumentos" element={<TabelaEmolumentos />} />
-            <Route path="validar-censec" element={<CepCensec />} /> {/* <-- Adicione a nova rota */}
+            <Route path="validar-cep" element={<CepCensec />} /> 
+            <Route path="validar-cesdi" element={<CesdiCensec />} />
             <Route path="comunidade" element={<ComunidadeSuporte />} />
             <Route path="comunidade/editor/:id" element={<EditorComunidade />} />
             <Route path="*" element={<Navigate to="/" replace />} />

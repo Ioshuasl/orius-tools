@@ -1,130 +1,101 @@
 import { parseCurrency } from '../utils/helpers.js';
 
 /**
- * Normaliza valores para comparação.
- * Se for número, fixa em 2 casas. Se for string, converte.
+ * Normaliza valores para comparação, garantindo precisão decimal para moedas.
  */
 const normalizeValue = (val, isMoney) => {
     if (val === undefined || val === null) return 0;
     if (isMoney) {
+        // Se for string (ex: do CSV), converte. Se já for número, apenas garante as casas decimais.
         const num = typeof val === 'string' ? parseCurrency(val) : val;
         return parseFloat(num.toFixed(2));
     }
-    return val; // Retorna o valor original se não for dinheiro
+    return val;
 };
 
 /**
- * Compara dois valores e retorna um objeto de status detalhado
+ * Compara dois campos e retorna um objeto de status de auditoria.
  */
-const compareField = (label, valPdf, valCsv, type = 'string') => {
+const compareField = (label, valSistema, valArquivo, type = 'string') => {
     const isMoney = type === 'money';
-    const v1 = normalizeValue(valPdf, isMoney);
-    const v2 = normalizeValue(valCsv, isMoney);
+    const v1 = normalizeValue(valSistema, isMoney);
+    const v2 = normalizeValue(valArquivo, isMoney);
 
-    // Lógica de igualdade:
-    // Dinheiro: diferença menor que 0.01 centavo
-    // Outros: igualdade estrita
+    // Para moedas, aceitamos uma margem de erro de 0.01 para evitar problemas de arredondamento
     const isEqual = isMoney ? Math.abs(v1 - v2) < 0.01 : v1 == v2;
 
     return {
         campo: label,
         status: isEqual ? "OK" : "DIVERGENTE",
-        valor_sistema: v1, // Fonte confiável (PDF)
-        valor_arquivo: v2, // Fonte auditada (CSV)
-        diferenca: (isMoney && !isEqual) ? parseFloat((v1 - v2).toFixed(2)) : null
+        valor_sistema: v1, 
+        valor_arquivo: v2, 
+        diferenca: isMoney ? parseFloat((v1 - v2).toFixed(2)) : null
     };
 };
 
-export const compararResultados = (jsonPdf, jsonCsv) => {
+/**
+ * Lógica principal de comparação entre os dados extraídos do PDF (Sistema) 
+ * e os dados extraídos do CSV (Arquivo).
+ */
+export const compararResultados = (resultadoPdf, resultadoCsv) => {
     const logAuditoria = {
         timestamp: new Date().toISOString(),
-        resumo_comparativo: [],
-        analise_registros: [],
         estatisticas: {
-            total_analisado: 0,
+            total_atos_sistema: resultadoPdf.resumo.quantidade_total,
+            total_atos_arquivo: resultadoCsv.resumo.quantidade_total_atos,
             total_correto: 0,
-            total_com_divergencia: 0,
-            ausentes_sistema: 0,
-            ausentes_arquivo: 0
-        }
+            total_com_divergencia: 0
+        },
+        resumo_comparativo: [],
+        analise_registros: []
     };
 
-    // --- 1. COMPARAÇÃO DOS TOTAIS (CABEÇALHO) ---
-    
-    const resPdf = jsonPdf.resumo || {};
-    const resCsv = jsonCsv.resumo || {};
+    const pdfRes = resultadoPdf.resumo;
+    const csvRes = resultadoCsv.resumo;
 
-    // Mapa de campos para comparar no resumo
-    const mapaResumo = [
-        { label: 'Quantidade de Atos', keyPdf: 'quantidade_total', keyCsv: 'quantidade_total_atos', type: 'number' },
-        { label: 'Valor da Guia (Total)', keyPdf: 'valor_guia', keyCsv: 'valor_guia', type: 'money' },
-        { label: 'Total Emolumentos', keyPdf: 'valor_total_emolumentos', keyCsv: 'valor_total_emolumentos', type: 'money' },
-        { label: 'Total Taxa Judiciária', keyPdf: 'valor_taxa_judiciaria', keyCsv: 'valor_total_taxa_judiciaria', type: 'money' },
-        { label: 'Total Fundesp', keyPdf: 'valor_fundesp', keyCsv: 'valor_total_fundesp', type: 'money' },
-        { label: 'Total Funemp', keyPdf: 'valor_funemp', keyCsv: 'valor_total_funemp', type: 'money' },
-        { label: 'Total Funcomp', keyPdf: 'valor_funcomp', keyCsv: 'valor_total_funcomp', type: 'money' }
+    // 1. Comparação do Resumo Geral (Cabeçalho da Guia)
+    logAuditoria.resumo_comparativo = [
+        compareField('Quantidade Total de Atos', pdfRes.quantidade_total, csvRes.quantidade_total_atos, 'number'),
+        compareField('Valor Total Emolumentos', pdfRes.valor_total_emolumentos, csvRes.valor_total_emolumentos, 'money'),
+        compareField('Valor Taxa Judiciária', pdfRes.valor_taxa_judiciaria, csvRes.valor_total_taxa_judiciaria, 'money'),
+        // Comparação unificada utilizando o novo campo totalizador de fundos
+        compareField('Valor Total dos Fundos', pdfRes.valor_total_fundos, csvRes.valor_total_fundos, 'money')
     ];
 
-    mapaResumo.forEach(map => {
-        logAuditoria.resumo_comparativo.push(
-            compareField(map.label, resPdf[map.keyPdf], resCsv[map.keyCsv], map.type)
-        );
+    // 2. Mapeamento dos registros do CSV para busca rápida (O(1)) pelo Pedido/Lote
+    const mapCsv = new Map();
+    resultadoCsv.registros.forEach(reg => {
+        if (reg.pedido_lote) {
+            mapCsv.set(String(reg.pedido_lote), reg);
+        }
     });
 
-    // --- 2. COMPARAÇÃO DETALHADA DOS REGISTROS ---
+    // 3. Comparação Linha a Linha
+    resultadoPdf.registros.forEach(regPdf => {
+        const pedido = String(regPdf.pedido_lote);
+        const regCsv = mapCsv.get(pedido);
 
-    const indexPdf = new Map();
-    jsonPdf.registros.forEach(r => indexPdf.set(String(r.pedido_lote).trim(), r));
-
-    const indexCsv = new Map();
-    jsonCsv.registros.forEach(r => indexCsv.set(String(r.pedido_lote).trim(), r));
-
-    const todosPedidos = new Set([...indexPdf.keys(), ...indexCsv.keys()]);
-    logAuditoria.estatisticas.total_analisado = todosPedidos.size;
-
-    todosPedidos.forEach(pedido => {
-        const regPdf = indexPdf.get(pedido);
-        const regCsv = indexCsv.get(pedido);
-
-        // Caso 1: Registro existe apenas no PDF (Sistema)
-        if (regPdf && !regCsv) {
-            logAuditoria.estatisticas.ausentes_arquivo++;
+        if (!regCsv) {
             logAuditoria.analise_registros.push({
-                pedido: pedido,
-                codigo: regPdf.codigo,
+                pedido,
+                status_registro: "NAO_ENCONTRADO_NO_CSV",
                 tipo_ato: regPdf.tipo_ato,
-                status_registro: "AUSENTE_NO_CSV",
-                detalhes: []
+                valor_emol_sistema: regPdf.valor_total_emolumentos
             });
+            logAuditoria.estatisticas.total_com_divergencia++;
             return;
         }
 
-        // Caso 2: Registro existe apenas no CSV (Arquivo)
-        if (!regPdf && regCsv) {
-            logAuditoria.estatisticas.ausentes_sistema++;
-            logAuditoria.analise_registros.push({
-                pedido: pedido,
-                codigo: regCsv.codigo,
-                tipo_ato: regCsv.tipo_ato,
-                status_registro: "AUSENTE_NO_SISTEMA",
-                detalhes: []
-            });
-            return;
-        }
-
-        // Caso 3: Existe em ambos - Comparação Campo a Campo
         const comparacoesItem = [
             compareField('Quantidade', regPdf.quantidade, regCsv.quantidade, 'number'),
             compareField('Emolumentos', regPdf.valor_total_emolumentos, regCsv.valor_total_emolumentos, 'money'),
             compareField('Taxa Judiciária', regPdf.valor_total_taxa_judiciaria, regCsv.valor_total_taxa_judiciaria, 'money'),
-            compareField('Fundos', regPdf.valor_total_fundos, regCsv.valor_total_fundos, 'money'),
-            // Podemos adicionar Código se necessário, mas geralmente a descrição varia muito
-            compareField('Código Ato', regPdf.codigo, regCsv.codigo, 'number')
+            // Comparação do total de fundos calculado para cada item específico
+            compareField('Total Fundos', regPdf.valor_total_fundos, regCsv.valor_total_fundos, 'money')
         ];
 
-        // Verifica se houve alguma divergência nesse registro
         const temErro = comparacoesItem.some(c => c.status === "DIVERGENTE");
-
+        
         if (temErro) {
             logAuditoria.estatisticas.total_com_divergencia++;
         } else {
@@ -132,19 +103,25 @@ export const compararResultados = (jsonPdf, jsonCsv) => {
         }
 
         logAuditoria.analise_registros.push({
-            pedido: pedido,
-            codigo: regPdf.codigo, // Usamos o código do PDF como referência
+            pedido,
+            codigo: regPdf.codigo,
             tipo_ato: regPdf.tipo_ato,
             status_registro: temErro ? "COM_DIVERGENCIA" : "OK",
-            detalhes: comparacoesItem // Array contendo TODOS os campos (Certos e Errados)
+            detalhes: comparacoesItem
         });
     });
 
-    // Ordenar para que os erros apareçam primeiro na lista
-    logAuditoria.analise_registros.sort((a, b) => {
-        if (a.status_registro === 'OK' && b.status_registro !== 'OK') return 1;
-        if (a.status_registro !== 'OK' && b.status_registro === 'OK') return -1;
-        return 0;
+    // 4. Verificação de Registros Sobressalentes no CSV (opcional, mas recomendado)
+    const pedidosPdf = new Set(resultadoPdf.registros.map(r => String(r.pedido_lote)));
+    resultadoCsv.registros.forEach(regCsv => {
+        if (regCsv.pedido_lote && !pedidosPdf.has(String(regCsv.pedido_lote))) {
+            logAuditoria.analise_registros.push({
+                pedido: regCsv.pedido_lote,
+                status_registro: "NAO_ENCONTRADO_NO_SISTEMA_PDF",
+                tipo_ato: regCsv.tipo_ato,
+                valor_emol_arquivo: regCsv.valor_total_emolumentos
+            });
+        }
     });
 
     return logAuditoria;

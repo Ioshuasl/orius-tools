@@ -81,8 +81,9 @@ export default function ComparadorGuias() {
   };
 
   // --- Tela de Resultados ---
-  if (result) {
-    const { estatisticas_gerais } = result;
+  if (result && result.data) {
+    const { estatisticas, resumo_comparativo, analise_registros, arquivos_processados } = result.data;
+
     return (
       <div className="pb-20 animate-in fade-in duration-500">
         {/* Barra de Ações Fixa da Ferramenta */}
@@ -94,7 +95,8 @@ export default function ComparadorGuias() {
             <div>
               <h1 className="text-lg font-bold text-gray-900 dark:text-white leading-tight">Auditoria Concluída</h1>
               <p className="text-xs text-gray-500 dark:text-gray-400 font-medium">
-                {result.arquivos_processados.pdf} • {result.arquivos_processados.csv}
+                {/* Correção do Erro: Acesso via result.data e Optional Chaining */}
+                {arquivos_processados?.pdf || pdfFile?.name} • {arquivos_processados?.csv || csvFile?.name}
               </p>
             </div>
           </div>
@@ -108,20 +110,20 @@ export default function ComparadorGuias() {
 
         <div className="p-6 space-y-8 max-w-7xl mx-auto">
           <section className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-            <StatsCard title="Analisados" value={estatisticas_gerais.total_analisado} icon={Search} />
-            <StatsCard title="Corretos" value={estatisticas_gerais.total_correto} icon={CheckCircle2} variant="default" />
-            <StatsCard title="Divergentes" value={estatisticas_gerais.total_com_divergencia} icon={AlertCircle} variant={estatisticas_gerais.total_com_divergencia > 0 ? "warning" : "default"} />
-            <StatsCard title="Ausentes" value={estatisticas_gerais.ausentes_sistema} icon={XCircle} variant={estatisticas_gerais.ausentes_sistema > 0 ? "danger" : "default"} />
+            <StatsCard title="Analisados" value={estatisticas.total_atos_sistema} icon={Search} />
+            <StatsCard title="Corretos" value={estatisticas.total_correto} icon={CheckCircle2} variant="default" />
+            <StatsCard title="Divergentes" value={estatisticas.total_com_divergencia} icon={AlertCircle} variant={estatisticas.total_com_divergencia > 0 ? "warning" : "default"} />
+            <StatsCard title="Ausentes" value={result.data.estatisticas.total_atos_sistema - result.data.estatisticas.total_correto - result.data.estatisticas.total_com_divergencia} icon={XCircle} variant="danger" />
           </section>
           
-          <HeaderTable data={result.auditoria_cabecalho} />
-          <RecordsList registros={result.auditoria_registros} />
+          <HeaderTable data={resumo_comparativo} />
+          <RecordsList registros={analise_registros} />
         </div>
       </div>
     );
   }
 
-  // --- Tela de Upload ---
+  // --- Tela de Upload (Restaurada para original) ---
   return (
     <div className="flex flex-col flex-1 h-full min-h-[85vh] items-center justify-center p-4">
       <div className="max-w-2xl w-full space-y-6">

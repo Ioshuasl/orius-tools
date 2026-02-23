@@ -1,8 +1,9 @@
 import express from 'express';
 import cors from 'cors';
 import swaggerUi from 'swagger-ui-express';
-import path from 'path'; // <--- ADICIONE ESTE IMPORT
-import { sequelize } from './config/database.js'; // Importando a conexão
+import path from 'path';
+import os from 'os'; // Módulo nativo para detectar interfaces de rede
+import { sequelize } from './config/database.js';
 
 // Importação das Rotas
 import converterRoutes from './routes/converterRoutes.js';
@@ -14,8 +15,27 @@ import { swaggerSpec } from './config/swagger.js';
 const app = express();
 const PORT = process.env.PORT || 3000;
 
+/**
+ * Função para capturar o IP da rede local (estilo Vite)
+ */
+function getLocalIp() {
+    const interfaces = os.networkInterfaces();
+    for (const name of Object.keys(interfaces)) {
+        for (const iface of interfaces[name]) {
+            // Filtra por IPv4 e ignora o endereço interno (loopback)
+            if (iface.family === 'IPv4' && !iface.internal) {
+                return iface.address;
+            }
+        }
+    }
+    return 'localhost';
+}
+
 // Configurações globais
-app.use(cors());
+app.use(cors({
+    // Permite que o frontend leia os headers de validação do XML
+    exposedHeaders: ['X-Validation-Success', 'X-Validation-Errors'],
+}));
 app.use(express.json());
 
 // Rota da Documentação Swagger
@@ -26,6 +46,8 @@ app.use('/api/converter', converterRoutes);
 app.use('/api/comparar', comparisonRoutes);
 app.use('/api/censec', censecRoutes);
 app.use('/api/community', communityRoutes);
+
+// Servir arquivos estáticos da pasta uploads
 app.use('/uploads', express.static(path.resolve(process.cwd(), 'uploads')));
 
 // Rota de Health Check
@@ -39,29 +61,30 @@ app.get('/', (req, res) => {
 });
 
 /**
- * Inicialização com verificação de Banco de Dados
+ * Inicialização com verificação de Banco de Dados e Exposição na Rede
  */
 async function startServer() {
     try {
-        // 1. Tenta autenticar a conexão
+        // 1. Autenticação com o PostgreSQL
         await sequelize.authenticate();
-        console.log('✅ Conexão com o PostgreSQL estabelecida com sucesso.');
+        console.log('\n\x1b[32m%s\x1b[0m', '  ✅ Conexão com o PostgreSQL estabelecida.');
 
-        // 2. Sincroniza os modelos (cria tabelas conforme as definições)
-        // alter: true permite atualizar colunas existentes sem apagar dados
+        // 2. Sincronização dos modelos
         await sequelize.sync({ alter: true });
-        console.log('✅ Modelos sincronizados com o banco de dados.');
+        console.log('\x1b[32m%s\x1b[0m', '  ✅ Modelos sincronizados com o banco de dados.');
 
-        // 3. Inicia o servidor Express
-        app.listen(PORT, () => {
-            console.log(`=============================================`);
-            console.log(`🚀 Orius Tools API rodando na porta ${PORT}`);
-            console.log(`📄 Documentação: http://localhost:${PORT}/api-docs`);
-            console.log(`=============================================`);
+        const localIp = getLocalIp();
+
+        // 3. Inicia o servidor escutando em '0.0.0.0' para expor na rede
+        app.listen(PORT, '0.0.0.0', () => {
+            console.log(`\n  \x1b[32m➜\x1b[0m  \x1b[1mLocal:\x1b[0m   http://localhost:\x1b[36m${PORT}\x1b[0m/`);
+            console.log(`  \x1b[32m➜\x1b[0m  \x1b[1mNetwork:\x1b[0m http://${localIp}:\x1b[36m${PORT}\x1b[0m/`);
+            console.log(`\n  \x1b[90mDocumentação disponível em: http://${localIp}:${PORT}/api-docs\x1b[0m\n`);
         });
+
     } catch (error) {
-        console.error('❌ Não foi possível conectar ao banco de dados:', error);
-        process.exit(1); // Encerra a aplicação caso o banco não esteja disponível
+        console.error('\n\x1b[31m%s\x1b[0m', '  ❌ Erro ao iniciar o servidor:', error.message);
+        process.exit(1); 
     }
 }
 

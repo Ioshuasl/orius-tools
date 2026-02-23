@@ -2,13 +2,13 @@ import fs from 'fs';
 import { processarGuiaSistema } from '../services/textService.js';
 import { processarGuiaCsv } from '../services/csvService.js';
 import { compararResultados } from '../services/comparsionService.js';
-import { loadReferenceMap } from '../utils/referenceLoader.js';
 
-// Carrega o mapa de referência
-const referenceMap = loadReferenceMap();
-
+/**
+ * Controller responsável por coordenar a comparação entre a Guia do Sistema (PDF)
+ * e o Arquivo de Conferência (CSV/XLSX).
+ */
 export const realizarComparacaoCompleta = async (req, res) => {
-    // 1. Validação dos arquivos
+    // Recupera os caminhos dos arquivos enviados via upload (ex: multer)
     if (!req.files || !req.files['pdf'] || !req.files['csv']) {
         return res.status(400).json({ 
             error: 'É necessário enviar dois arquivos: um campo "pdf" e um campo "csv".' 
@@ -19,57 +19,37 @@ export const realizarComparacaoCompleta = async (req, res) => {
     const csvFile = req.files['csv'][0];
 
     try {
-        console.log(`⚖️  Iniciando comparação: ${pdfFile.originalname} vs ${csvFile.originalname}`);
-
-        // 2. Processamento Paralelo (Leitura dos arquivos)
+        // 1. Processamento paralelo dos dois tipos de arquivos
+        // O processarGuiaSistema agora retorna o detalhamento_fundos por registro
+        // O processarGuiaCsv agora utiliza a função calcularFundos internamente
         const [resultadoPdf, resultadoCsv] = await Promise.all([
-            processarGuiaSistema(pdfFile.path, referenceMap),
+            processarGuiaSistema(pdfFile.path),
             processarGuiaCsv(csvFile.path)
         ]);
 
-        // 3. Comparação Lógica (Gera o Log de Auditoria)
+        // 2. Execução da lógica de auditoria/comparação refatorada
+        // O service agora compara o valor_total_fundos unificado
         const relatorio = compararResultados(resultadoPdf, resultadoCsv);
 
-        // 4. Limpeza dos arquivos temporários
-        try {
-            fs.unlinkSync(pdfFile.path);
-            fs.unlinkSync(csvFile.path);
-        } catch (e) {
-            console.error('Erro ao limpar arquivos temporários', e);
-        }
-
-        // 5. Resposta JSON (Adaptada para a nova estrutura do Service)
-        res.json({
+        // 3. Resposta com o log de auditoria completo
+        return res.json({
             success: true,
-            arquivos_processados: {
-                pdf: pdfFile.originalname,
-                csv: csvFile.originalname
-            },
-            // Agora usamos diretamente as estatísticas calculadas pelo serviço
-            estatisticas_gerais: relatorio.estatisticas,
-            
-            // O resumo comparativo do cabeçalho (Totais)
-            auditoria_cabecalho: relatorio.resumo_comparativo,
-            
-            // A lista detalhada linha a linha
-            auditoria_registros: relatorio.analise_registros,
-            
-            // Timestamp da análise
-            data_analise: relatorio.timestamp
+            data: relatorio
         });
 
     } catch (error) {
-        console.error('❌ Erro na comparação:', error);
-        
-        // Tenta limpar arquivos em caso de erro fatal
-        try {
-            if (fs.existsSync(pdfFile.path)) fs.unlinkSync(pdfFile.path);
-            if (fs.existsSync(csvFile.path)) fs.unlinkSync(csvFile.path);
-        } catch(e) {}
-
-        res.status(500).json({ 
-            error: 'Erro ao processar a comparação.', 
+        console.error('Erro durante a comparação de arquivos:', error);
+        return res.status(500).json({ 
+            error: 'Falha ao processar e comparar os arquivos.',
             details: error.message 
         });
+    } finally {
+        // 4. Limpeza: Remove os arquivos temporários do servidor para economizar espaço
+        if (pdfFile && fs.existsSync(pdfFile.path)) {
+            fs.unlinkSync(pdfFile.path);
+        }
+        if (csvFile && fs.existsSync(csvFile.path)) {
+            fs.unlinkSync(csvFile.path);
+        }
     }
 };

@@ -6,7 +6,8 @@ export function Sidebar() {
     { path: '/', label: 'Início', icon: Home },
     { path: '/comparador-guias', label: 'Comparador de Guias', icon: FileSearch },
     { path: '/tabela-emolumentos', label: 'Tabela de Emolumentos', icon: FileSpreadsheet },
-    { path: '/validar-censec', label: 'Validador CENSEC', icon: ShieldCheck }, // <-- Adicione o item no menu
+    { path: '/validar-cep', label: 'Validador CENSEC / CEP', icon: ShieldCheck },
+    { path: '/validar-cesdi', label: 'Validador CENSEC / CESDI', icon: ShieldCheck },
     { path: '/comunidade', label: 'Comunidade Suporte', icon: MessagesSquare },
   ];
 

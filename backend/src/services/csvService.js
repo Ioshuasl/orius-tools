@@ -1,5 +1,6 @@
 import XLSX from 'xlsx';
 import { parseCurrency } from '../utils/helpers.js';
+import { calcularFundos } from '../utils/calcularFundos.js'; // Importação solicitada
 
 const extrairInfoData = (dateStr) => {
     const result = {
@@ -11,7 +12,6 @@ const extrairInfoData = (dateStr) => {
     if (!dateStr || typeof dateStr !== 'string') return result;
     
     const cleanDate = dateStr.trim();
-    // Regex para capturar DD/MM/AAAA
     const dateMatch = cleanDate.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})/);
     
     if (!dateMatch) return result;
@@ -59,23 +59,15 @@ export const processarGuiaCsv = (filePath) => {
                 pedido: headerRow.findIndex(h => h === 'PEDIDO'), 
                 codigoDesc: headerRow.findIndex(h => h.includes('TIPO ATO')),
                 qtd: headerRow.findIndex(h => h.includes('QUANTIDADE')),
-                // Mapeia colunas de data (Data Pedido ou Data Referência)
                 dataPedido: headerRow.findIndex(h => h.includes('DATA PEDIDO')),
                 dataRef: headerRow.findIndex(h => h.includes('DATA REFER') || h.includes('REFERENCIA')),
-                
                 emol: headerRow.findIndex(h => h.includes('TOTAL EMOLUMENTO')),
                 base: headerRow.findIndex(h => h.includes('TOTAL BASE')),
-                taxa: headerRow.findIndex(h => h.includes('TOTAL TAXA')),
-                fundos: headerRow.findIndex(h => h.includes('TOTAL FUNDESP') || h.includes('FUNDOS'))
+                taxa: headerRow.findIndex(h => h.includes('TOTAL TAXA'))
             };
-
-            const idxFunemp = colMap.fundos + 1;
-            const idxFuncomp = colMap.fundos + 2;
 
             const dataRows = rows.slice(headerIdx + 1);
             const extractedData = [];
-            
-            // Variável para a data da guia (será preenchida pelo primeiro item válido)
             let dataGuiaStr = null;
 
             dataRows.forEach(row => {
@@ -91,35 +83,23 @@ export const processarGuiaCsv = (filePath) => {
 
                 if (!codigo) return; 
 
-                // --- NOVA LÓGICA DE DATA ---
-                // Tenta pegar a data deste registo específico se ainda não tivermos a data da guia
                 if (!dataGuiaStr) {
-                    // Prioridade 1: Coluna Data Referência
                     let valData = (colMap.dataRef !== -1) ? row[colMap.dataRef] : null;
-                    
-                    // Prioridade 2: Coluna Data Pedido (fallback)
-                    if (!valData && colMap.dataPedido !== -1) {
-                        valData = row[colMap.dataPedido];
-                    }
+                    if (!valData && colMap.dataPedido !== -1) valData = row[colMap.dataPedido];
 
                     if (valData) {
                         if (typeof valData === 'number') {
                             const dateObj = XLSX.SSF.parse_date_code(valData);
-                            const dia = String(dateObj.d).padStart(2, '0');
-                            const mes = String(dateObj.m).padStart(2, '0');
-                            dataGuiaStr = `${dia}/${mes}/${dateObj.y}`;
+                            dataGuiaStr = `${String(dateObj.d).padStart(2, '0')}/${String(dateObj.m).padStart(2, '0')}/${dateObj.y}`;
                         } else {
                             dataGuiaStr = String(valData).trim();
                         }
                     }
                 }
-                // ---------------------------
 
-                const extractValueFromText = (text) => {
-                    if (!text || typeof text !== 'string') return 0;
-                    const match = text.match(/R\$\s*([\d.,]+)/);
-                    return match ? parseCurrency(match[1]) : 0;
-                };
+                const baseCalculo = parseCurrency(row[colMap.base]);
+                // APLICAÇÃO DA NOVA FUNÇÃO NO ITEM
+                const fundosCalculados = calcularFundos(baseCalculo);
 
                 const item = {
                     pedido_lote: rawPedido,
@@ -127,49 +107,44 @@ export const processarGuiaCsv = (filePath) => {
                     tipo_ato: rawTipoAto,
                     quantidade: row[colMap.qtd] ? parseInt(row[colMap.qtd]) : 0,
                     valor_total_emolumentos: parseCurrency(row[colMap.emol]),
-                    valor_total_base_calculo: parseCurrency(row[colMap.base]),
+                    valor_total_base_calculo: baseCalculo,
                     valor_total_taxa_judiciaria: parseCurrency(row[colMap.taxa]),
-                    valor_total_fundos: parseCurrency(row[colMap.fundos]),
-                    valor_funemp: extractValueFromText(row[idxFunemp]),
-                    valor_funcomp: extractValueFromText(row[idxFuncomp])
+                    // Novos atributos detalhados vindo da função
+                    fundos: fundosCalculados.detalhado,
+                    valor_total_fundos: fundosCalculados.total
                 };
 
                 extractedData.push(item);
             });
 
-            // Calcula informações de data com base no que foi encontrado nos registos
             const infoData = extrairInfoData(dataGuiaStr);
-
-            const sumField = (field) => {
-                const total = extractedData.reduce((acc, item) => acc + (item[field] || 0), 0);
-                return Math.round(total * 100) / 100;
-            };
+            const totalBaseGeral = extractedData.reduce((acc, item) => acc + item.valor_total_base_calculo, 0);
+            
+            // APLICAÇÃO DA NOVA FUNÇÃO NO RESUMO (Sobre o total da base)
+            const resumoFundos = calcularFundos(totalBaseGeral);
 
             const resumo = {
                 decendio: infoData.decendio,
                 mes_referencia: infoData.mes_referencia,
                 ano_referencia: infoData.ano_referencia,
+                total_registros: extractedData.length,
+                quantidade_total_atos: extractedData.reduce((acc, item) => acc + item.quantidade, 0),
                 
-                valor_guia: 0, 
-                quantidade_total_atos: 0,
-                valor_total_emolumentos: sumField('valor_total_emolumentos'),
-                valor_total_base_calculo: sumField('valor_total_base_calculo'),
-                valor_total_taxa_judiciaria: sumField('valor_total_taxa_judiciaria'),
-                valor_total_fundesp: sumField('valor_total_fundos'),
-                valor_total_funemp: sumField('valor_funemp'),
-                valor_total_funcomp: sumField('valor_funcomp'),
-                total_registros: extractedData.length
+                valor_total_emolumentos: Number(extractedData.reduce((acc, item) => acc + item.valor_total_emolumentos, 0).toFixed(2)),
+                valor_total_base_calculo: Number(totalBaseGeral.toFixed(2)),
+                valor_total_taxa_judiciaria: Number(extractedData.reduce((acc, item) => acc + item.valor_total_taxa_judiciaria, 0).toFixed(2)),
+                
+                // Atributos de resumo atualizados
+                detalhamento_fundos: resumoFundos.detalhado,
+                valor_total_fundos: resumoFundos.total
             };
 
-            resumo.quantidade_total_atos = extractedData.reduce((acc, item) => acc + (item.quantidade || 0), 0);
-
-            resumo.valor_guia = Math.round((
+            // Cálculo do Valor Total da Guia (Emolumentos + Taxa + Soma de todos os Fundos)
+            resumo.valor_total_guia = Number((
                 resumo.valor_total_emolumentos + 
                 resumo.valor_total_taxa_judiciaria + 
-                resumo.valor_total_fundesp + 
-                resumo.valor_total_funemp + 
-                resumo.valor_total_funcomp
-            ) * 100) / 100;
+                resumo.valor_total_fundos
+            ).toFixed(2));
 
             resolve({
                 resumo,

@@ -1,5 +1,14 @@
 // src/types.ts
 
+export interface DetalheFundo {
+  fundesp: number;
+  funcomp: number;
+  funemp: number;
+  advogados: number;
+  funproge: number;
+  fundepeg: number;
+}
+
 export interface DetalheItem {
   campo: string;
   status: 'OK' | 'DIVERGENTE';
@@ -10,10 +19,12 @@ export interface DetalheItem {
 
 export interface RegistroAuditoria {
   pedido: string;
-  codigo: number;
+  status_registro: 'OK' | 'COM_DIVERGENCIA' | 'AUSENTE_NO_CSV' | 'AUSENTE_NO_SISTEMA' | 'NAO_ENCONTRADO_NO_SISTEMA_PDF';
   tipo_ato: string;
-  status_registro: 'OK' | 'COM_DIVERGENCIA' | 'AUSENTE_NO_SISTEMA';
-  detalhes: DetalheItem[];
+  codigo?: number; // Opcional pois pode não existir no PDF/CSV
+  detalhes?: DetalheItem[];
+  fundos?: DetalheFundo; // Detalhamento calculado
+  valor_emol_arquivo?: number; // Para itens ausentes no sistema
 }
 
 export interface CabecalhoItem {
@@ -25,23 +36,27 @@ export interface CabecalhoItem {
 }
 
 export interface EstatisticasGerais {
-  total_analisado: number;
+  total_atos_sistema: number;
+  total_atos_arquivo: number;
   total_correto: number;
   total_com_divergencia: number;
-  ausentes_sistema: number;
-  ausentes_arquivo: number;
+  // Mantidos para compatibilidade com o componente de StatsCard se necessário
+  ausentes_sistema?: number;
+  ausentes_arquivo?: number;
 }
 
 export interface ApiResponse {
   success: boolean;
-  arquivos_processados: {
-    pdf: string;
-    csv: string;
+  data: {
+    timestamp: string;
+    estatisticas: EstatisticasGerais;
+    resumo_comparativo: DetalheItem[];
+    analise_registros: RegistroAuditoria[];
+    arquivos_processados?: {
+      pdf: string;
+      csv: string;
+    };
   };
-  estatisticas_gerais: EstatisticasGerais;
-  auditoria_cabecalho: CabecalhoItem[];
-  auditoria_registros: RegistroAuditoria[];
-  data_analise: string;
 }
 
 // --- Tabela de Emolumentos ---
@@ -80,10 +95,18 @@ export interface ErroCensec {
   linhaDoArquivo: number;
   localizacao: string;
   nomeDaParte: string | null;
+  /** * No CESDI, este campo agora recebe o nome amigável do ato (Ex: "Retificação")
+   * enviado pelo backend para melhorar a UI/UX.
+   */
+  tipoAtoCesdi?: string; 
   mensagemDeErro: string;
   tipoDeErro: string;
+  /** * Lista de opções enviada pelo backend (ex: Qualidades permitidas para aquele ato)
+   * para preencher automaticamente os Selects de correção.
+   */
   opcoesAceitas?: string[];
-  // Campo auxiliar para o frontend gerenciar a correção manual
+  /** * Campo auxiliar controlado pelo estado do React para armazenar a edição do usuário
+   */
   valorCorrigido?: string; 
 }
 
