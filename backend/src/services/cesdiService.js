@@ -36,15 +36,18 @@ export const validarXmlCesdi = async (filePath) => {
     const erros = [];
     const atosAgrupados = new Map();
 
+    /**
+     * Helper interno para padronizar o erro conforme types.ts
+     */
     const addErro = (linha, local, parte, msg, tipo, codAto = null, opcoes = undefined) => {
-        // Busca o rótulo amigável nas constantes
-        const nomeAmigavelAto = codAto ? (CONST.TIPOS_ATO_CESDI[codAto] || `Ato ${codAto}`) : "Ato não identificado";
+        // Busca o rótulo amigável (Ex: '7' -> 'Retificação')
+        const nomeAmigavelAto = codAto ? (CONST.TIPOS_ATO_CESDI[codAto] || `Ato ${codAto}`) : "Ato CESDI";
         
         erros.push({
             linhaDoArquivo: linha || '?',
             localizacao: local,
             nomeDaParte: parte || null,
-            tipoAtoCesdi: nomeAmigavelAto, // Rótulo amigável (Ex: "Retificação")
+            tipoAto: nomeAmigavelAto, // Interface genérica padronizada
             mensagemDeErro: msg,
             tipoDeErro: tipo,
             opcoesAceitas: opcoes
@@ -54,15 +57,13 @@ export const validarXmlCesdi = async (filePath) => {
     const xmlString = fs.readFileSync(filePath, 'utf-8');
     const parser = new DOMParser();
     const xmlDoc = parser.parseFromString(xmlString, "text/xml");
-    
-    // Captura registros do DataSet legado
     const atosNodeList = xmlDoc.getElementsByTagName("AtoCesdi");
 
     if (!atosNodeList.length) {
         return { sucesso: false, totalAtos: 0, erros: [{ mensagemDeErro: "Nenhuma tag <AtoCesdi> encontrada." }] };
     }
 
-    // --- PASSO 1: AGRUPAMENTO (Chave de Unicidade) ---
+    // --- PASSO 1: AGRUPAMENTO (Consolidação por Livro/Folha) ---
     for (let i = 0; i < atosNodeList.length; i++) {
         const node = atosNodeList[i];
         const linha = node.lineNumber;
@@ -75,8 +76,8 @@ export const validarXmlCesdi = async (filePath) => {
 
         if (!atosAgrupados.has(chave)) {
             atosAgrupados.set(chave, {
-                linha,
-                tipoAtoCesdi: getNodeText(node, "TipoAtoCesdi"), // Código original (Ex: '7')
+                linhaBase: linha,
+                tipoAtoCesdi: getNodeText(node, "TipoAtoCesdi"),
                 data: getNodeText(node, "DataAto"),
                 livro, livroComp, folha, folhaComp,
                 dataCasamento: getNodeText(node, "DataCasamento"),
@@ -93,7 +94,6 @@ export const validarXmlCesdi = async (filePath) => {
                 linha,
                 nome: pNome,
                 qualidade: getNodeText(node, "Qualidade"),
-                conjugeTipo: getNodeText(node, "Conjuge"),
                 docTipo1: getNodeText(node, "TipoDocumento1"),
                 docNum1: getNodeText(node, "Numero1"),
                 uf1: getNodeText(node, "Uf1"),
@@ -102,51 +102,44 @@ export const validarXmlCesdi = async (filePath) => {
         }
     }
 
-    // --- PASSO 2: VALIDAÇÃO DAS REGRAS (CESDI.MD) ---
+    // --- PASSO 2: VALIDAÇÃO DAS REGRAS ---
     atosAgrupados.forEach(ato => {
         const loc = `Livro ${ato.livro} Folha ${ato.folha}`;
         const codAto = ato.tipoAtoCesdi;
         
-        // 2.1. Obrigatoriedades de Cabeçalho
-        if (!codAto) addErro(ato.linha, loc, null, "TipoAtoCesdi é obrigatório.", "Obrigatoriedade");
+        if (!codAto) addErro(ato.linhaBase, loc, null, "TipoAtoCesdi é obrigatório.", "Obrigatoriedade");
 
-        const isDivorcioSep = ['1', '3', '4'].includes(codAto); // Separação e Divórcio
-        if (isDivorcioSep && !ato.responsavel) {
-            const opcoesResp = CONST.RESPONSAVEL_MENORES
-            if (!ato.dataCasamento) addErro(ato.linha, loc, null, "Data de Casamento obrigatória para este ato.", "Obrigatoriedade", codAto);
-            if (!ato.regimeBens) addErro(ato.linha, loc, null, "Regime de Bens é obrigatório.", "Obrigatoriedade", codAto, Object.values(CONST.REGIMES_BENS_CESDI));
-            if (!ato.responsavel) addErro(ato.linha, loc, null, "Responsável pelos menores obrigatório.", "Obrigatoriedade", codAto, opcoesResp);
+        // Regras para Separação e Divórcio (1, 3, 4)
+        const isDivorcioSep = ['1', '3', '4'].includes(codAto);
+        if (isDivorcioSep) {
+            if (!ato.dataCasamento) addErro(ato.linhaBase, loc, null, "Data de Casamento obrigatória para este ato.", "Obrigatoriedade", codAto);
+            if (!ato.regimeBens) addErro(ato.linhaBase, loc, null, "Regime de Bens é obrigatório.", "Obrigatoriedade", codAto, Object.values(CONST.REGIMES_BENS_CESDI));
+            if (!ato.responsavel) addErro(ato.linhaBase, loc, null, "Responsável pelos menores é obrigatório.", "Obrigatoriedade", codAto, CONST.RESPONSAVEL_MENORES.map(r => r.label));
         }
 
-        // 2.2. Mínimo de Partes
+        // Mínimo de Partes por Ato
         const minPartes = CONST.MINIMO_PARTES_POR_ATO[codAto] || CONST.MINIMO_PARTES_POR_ATO.DEFAULT;
         if (ato.partes.length < minPartes) {
-            addErro(ato.linha, loc, null, `Este tipo de ato exige no mínimo ${minPartes} partes.`, "Regra de Negócio", codAto);
+            addErro(ato.linhaBase, loc, null, `Este tipo de ato exige no mínimo ${minPartes} partes.`, "Regra de Negócio", codAto);
         }
 
-        // 2.3. Validação das Partes e Qualidades
+        // Validação das Partes
         ato.partes.forEach((p, idx) => {
             const qualidadeLimpa = p.qualidade?.replace(/\(A\)/g, '').trim();
             const isAdvogado = qualidadeLimpa?.toUpperCase() === "ADVOGADO";
 
-            // Cruzamento estrito de Qualidade x Tipo de Ato
+            // Cruzamento de Qualidade x Ato
             const permitidas = CONST.QUALIDADES_POR_ATO[codAto] || [];
-            if (!permitidas.some(q => q.toUpperCase() === qualidadeLimpa?.toUpperCase())) {
+            if (qualidadeLimpa && !permitidas.some(q => q.toUpperCase() === qualidadeLimpa.toUpperCase())) {
                 addErro(p.linha, loc, p.nome, `Qualidade '${p.qualidade}' inválida para este ato.`, "Domínio", codAto, permitidas);
             }
 
-            // Regras para Advogado
-            if (isAdvogado) {
-                if (idx === 0) addErro(p.linha, loc, p.nome, "O Advogado não pode ser o primeiro registro do ato.", "Regra de Negócio", codAto);
-                if (p.dataNasc) addErro(p.linha, loc, p.nome, "Data de nascimento não permitida para Advogados.", "Formato", codAto);
+            if (isAdvogado && idx === 0) {
+                addErro(p.linha, loc, p.nome, "O Advogado não pode ser o primeiro registro do ato.", "Regra de Negócio", codAto);
             }
 
-            // Validação de Documentos
             if (p.docTipo1 === 'CPF' && !isCpfValido(p.docNum1)) {
-                addErro(p.linha, loc, p.nome, `CPF (${p.docNum1}) é matematicamente inválido.`, "Validação Matemática", codAto);
-            }
-            if (p.docTipo1 === 'OAB' && !p.uf1) {
-                addErro(p.linha, loc, p.nome, "UF é obrigatória para OAB.", "Obrigatoriedade", codAto);
+                addErro(p.linha, loc, p.nome, `CPF (${p.docNum1}) inválido.`, "Validação Matemática", codAto);
             }
         });
     });
@@ -154,40 +147,42 @@ export const validarXmlCesdi = async (filePath) => {
     return { totalAtos: atosAgrupados.size, erros, sucesso: erros.length === 0 };
 };
 
+/**
+ * Aplicação de Correções Otimizada
+ */
 export const aplicarCorrecoesXml = async (filePath, correcoes) => {
     const xmlString = fs.readFileSync(filePath, 'utf-8');
     const parser = new DOMParser();
     const xmlDoc = parser.parseFromString(xmlString, "text/xml");
     const atosNodeList = xmlDoc.getElementsByTagName("AtoCesdi");
 
-    correcoes.forEach(conserto => {
-        for (let i = 0; i < atosNodeList.length; i++) {
-            const node = atosNodeList[i];
-            
-            if (node.lineNumber === conserto.linhaDoArquivo) {
-                // MAPEAMENTO FRONTEND -> TAG XML LEGADA (Delphi)
-                const mapeamento = {
-                    'responsavel': 'RespFilhosMenores',
-                    'dataCasamento': 'DataCasamento',
-                    'regimeBens': 'RegimeBens',
-                    'filhosMaiores': 'QuantidadeFilhosMaiores',
-                    'filhosMenores': 'QuantidadeFilhosMenores',
-                    'qualidade': 'Qualidade',
-                    'documento': 'Numero1',
-                    'nome': 'NomeParte'
-                };
+    // Indexação por linha O(1)
+    const nodesByLine = new Map();
+    for (let i = 0; i < atosNodeList.length; i++) {
+        nodesByLine.set(atosNodeList[i].lineNumber, atosNodeList[i]);
+    }
 
-                const tagAlvo = mapeamento[conserto.campo] || conserto.campo;
-                let tag = node.getElementsByTagName(tagAlvo)[0];
-                
-                if (tag) {
-                    tag.textContent = conserto.novoValor;
-                } else {
-                    // Cria a tag se estiver ausente no XML original
-                    const novaTag = xmlDoc.createElement(tagAlvo);
-                    novaTag.textContent = conserto.novoValor;
-                    node.appendChild(novaTag);
-                }
+    const mapeamentoTags = {
+        'responsavel': 'RespFilhosMenores',
+        'dataCasamento': 'DataCasamento',
+        'regimeBens': 'RegimeBens',
+        'qualidade': 'Qualidade',
+        'documento': 'Numero1',
+        'nome': 'NomeParte'
+    };
+
+    correcoes.forEach(conserto => {
+        const node = nodesByLine.get(conserto.linhaDoArquivo);
+        if (node) {
+            const tagAlvo = mapeamentoTags[conserto.campo] || conserto.campo;
+            let tag = node.getElementsByTagName(tagAlvo)[0];
+            
+            if (tag) {
+                tag.textContent = conserto.novoValor;
+            } else {
+                const novaTag = xmlDoc.createElement(tagAlvo);
+                novaTag.textContent = conserto.novoValor;
+                node.appendChild(novaTag);
             }
         }
     });

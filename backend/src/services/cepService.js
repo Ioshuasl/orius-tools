@@ -2,6 +2,9 @@ import fs from 'fs';
 import { DOMParser, XMLSerializer } from 'xmldom';
 import * as CONSTANTES from '../utils/cepConstants.js';
 
+/**
+ * Helper: Validação Matemática de CPF
+ */
 const isCpfValido = (cpf) => {
     if (!cpf) return false;
     cpf = cpf.replace(/[^\d]+/g, '');
@@ -15,29 +18,39 @@ const isCpfValido = (cpf) => {
     for (let i = 1; i <= 10; i++) soma += parseInt(cpf.substring(i - 1, i)) * (12 - i);
     resto = (soma * 10) % 11;
     if (resto === 10 || resto === 11) resto = 0;
-    if (resto !== parseInt(cpf.substring(10, 11))) return false;
-    return true;
+    return resto === parseInt(cpf.substring(10, 11));
 };
 
+/**
+ * Helper: Captura texto de tags XML
+ */
 const getNodeText = (node, tagName) => {
     const el = node.getElementsByTagName(tagName)[0];
     return el && el.textContent ? el.textContent.trim() : null;
 };
 
-// --- Serviço Principal ---
-
+/**
+ * SERVIÇO DE VALIDAÇÃO CEP
+ */
 export const validarXmlCep = async (filePath) => {
     const erros = [];
     const atosAgrupados = new Map();
 
-    const addErro = (linha, localizacao, nomeParte, mensagem, tipoErro, opcoesAceitas = undefined) => {
+    /**
+     * Helper interno para padronizar o erro conforme types.ts
+     */
+    const addErro = (linha, local, parte, msg, tipo, codAto = null, opcoes = undefined) => {
+        // Mapeia o código para nome amigável (Ex: '1' -> 'Escritura')
+        const nomeAmigavelAto = codAto ? (CONSTANTES.TIPOS_ATO[codAto] || `Ato ${codAto}`) : "Ato CEP";
+        
         erros.push({
-            linhaDoArquivo: linha || 'Desconhecida',
-            localizacao,
-            nomeDaParte: nomeParte || null,
-            mensagemDeErro: mensagem,
-            tipoDeErro: tipoErro,
-            opcoesAceitas
+            linhaDoArquivo: linha || '?',
+            localizacao: local,
+            nomeDaParte: parte || null,
+            tipoAto: nomeAmigavelAto, // Interface genérica
+            mensagemDeErro: msg,
+            tipoDeErro: tipo,
+            opcoesAceitas: opcoes
         });
     };
 
@@ -50,7 +63,7 @@ export const validarXmlCep = async (filePath) => {
         return { sucesso: false, totalAtos: 0, erros: [{ mensagemDeErro: "Nenhuma tag <AtoCep> encontrada." }] };
     }
 
-    // --- PASSO 1: AGRUPAMENTO (Chave de Unicidade) ---
+    // --- PASSO 1: AGRUPAMENTO (Consolidação por Unicidade) ---
     for (let i = 0; i < atosNodeList.length; i++) {
         const node = atosNodeList[i];
         const linha = node.lineNumber;
@@ -59,7 +72,7 @@ export const validarXmlCep = async (filePath) => {
         const livroComp = getNodeText(node, "LivroComplemento") || "";
         const folha = getNodeText(node, "Folha") || "";
         const folhaComp = getNodeText(node, "FolhaComplemento") || "";
-        const chave = `${livro}-${livroComp}-${folha}-${folhaComp}`;
+        const chave = `${livro}-${livroComp}-${folha}-${folhaComp}`; // Chave de unicidade
 
         if (!atosAgrupados.has(chave)) {
             atosAgrupados.set(chave, {
@@ -81,6 +94,7 @@ export const validarXmlCep = async (filePath) => {
 
         const ato = atosAgrupados.get(chave);
         
+        // Coleta de Partes
         const pNome = getNodeText(node, "ParteNome");
         if (pNome) {
             ato.partes.push({
@@ -92,79 +106,63 @@ export const validarXmlCep = async (filePath) => {
             });
         }
 
+        // Coleta de Referentes
         const refCns = getNodeText(node, "ReferenteCns");
         if (refCns || getNodeText(node, "ReferenteTipoAtoCep")) {
             ato.referentes.push({
                 linha,
-                tipoAtoCep: getNodeText(node, "ReferenteTipoAtoCep"),
                 cns: refCns,
-                livro: getNodeText(node, "ReferenteLivro"),
-                folha: getNodeText(node, "ReferenteFolha"),
-                desconhecido: getNodeText(node, "Desconhecido")
+                livro: getNodeText(node, "ReferenteLivro")
             });
         }
     }
 
-    // --- PASSO 2: VALIDAÇÃO DAS REGRAS (DATA DICTIONARY) ---
+    // --- PASSO 2: VALIDAÇÃO DAS REGRAS (CEP.MD) ---
     atosAgrupados.forEach((ato) => {
-        const loc = `Livro ${ato.livro}${ato.livroComp} Folha ${ato.folha}${ato.folhaComp}`;
+        const loc = `Livro ${ato.livro} Folha ${ato.folha}`;
+        const codAto = ato.tipoAtoCep;
 
-        // 2.1. Cabeçalho
-        if (!ato.tipoAtoCep) addErro(ato.linhaBase, loc, null, "tipoAtoCep é obrigatório.", "Obrigatoriedade", CONSTANTES.TIPOS_ATO);
-        
-        if (ato.tipoAtoCep === '1') {
-            if (!ato.naturezaEscritura) addErro(ato.linhaBase, loc, null, "naturezaEscritura é obrigatória para Escrituras.", "Obrigatoriedade", CONSTANTES.NATUREZAS_ESCRITURA);
-            
-            if (['15', '20'].includes(ato.naturezaEscritura)) {
-                if (!ato.regimeBens) addErro(ato.linhaBase, loc, null, "regimeBens é obrigatório para Declaratórias/Dissolução de União Estável.", "Obrigatoriedade", CONSTANTES.REGIMES_BENS_XML);
-            }
-
-            if (['75', '76'].includes(ato.naturezaEscritura)) {
-                if (!ato.naturezaLitigio) addErro(ato.linhaBase, loc, null, "naturezaLitigio é obrigatória para Mediação/Conciliação.", "Obrigatoriedade", CONSTANTES.NATUREZAS_LITIGIO);
-                if (!ato.acordo) addErro(ato.linhaBase, loc, null, "acordo (SIM/NÃO) é obrigatório para Mediação/Conciliação.", "Obrigatoriedade", ["SIM", "NÃO"]);
-            }
+        // 2.1. Validação de Cabeçalho e Domínios
+        if (!codAto) {
+            addErro(ato.linhaBase, loc, null, "tipoAtoCep é obrigatório.", "Obrigatoriedade", null, Object.keys(CONSTANTES.TIPOS_ATO));
+        } else if (!CONSTANTES.TIPOS_ATO[codAto]) {
+            addErro(ato.linhaBase, loc, null, `Código de ato '${codAto}' inválido.`, "Domínio", null, Object.keys(CONSTANTES.TIPOS_ATO));
         }
 
-        if (ato.tipoAtoCep === '9' && !ato.naturezaAtaNotarialDeUsucapiao) {
-            addErro(ato.linhaBase, loc, null, "naturezaAtaNotarialDeUsucapiao é obrigatória para este ato.", "Obrigatoriedade", CONSTANTES.NATUREZAS_USUCAPIAO);
+        // Condicional: Escritura (Tipo 1) exige Natureza
+        if (codAto === '1' && !ato.naturezaEscritura) {
+            addErro(ato.linhaBase, loc, null, "naturezaEscritura é obrigatória para Escrituras.", "Obrigatoriedade", codAto, Object.keys(CONSTANTES.NATUREZAS_ESCRITURA));
         }
 
-        if (ato.mne && ato.mne.length !== 29) {
-            addErro(ato.linhaBase, loc, null, "mne deve ter exatamente 29 caracteres.", "Formato Inválido");
+        // Condicional: Usucapião (Tipo 9)
+        if (codAto === '9' && !ato.naturezaAtaNotarialDeUsucapiao) {
+            addErro(ato.linhaBase, loc, null, "naturezaAtaNotarialDeUsucapiao é obrigatória.", "Obrigatoriedade", codAto, Object.keys(CONSTANTES.NATUREZAS_USUCAPIAO));
         }
 
-        // Validações de Cabeçalho Obrigatórias Simples
-        if (!ato.data) addErro(ato.linhaBase, loc, null, "A data de lavratura (DataAto) é obrigatória.", "Obrigatoriedade");
-        if (!ato.livro) addErro(ato.linhaBase, loc, null, "livro é obrigatório.", "Obrigatoriedade");
-        if (!ato.folha) addErro(ato.linhaBase, loc, null, "folha é obrigatória.", "Obrigatoriedade");
-        if (!ato.valor) addErro(ato.linhaBase, loc, null, "valor financeiro do ato é obrigatório.", "Obrigatoriedade");
+        // Condicional: Mediação/Conciliação (Naturezas 75/76)
+        if (ato.naturezaEscritura === '75' || ato.naturezaEscritura === '76') {
+            if (!ato.naturezaLitigio) addErro(ato.linhaBase, loc, null, "naturezaLitigio é obrigatória.", "Obrigatoriedade", codAto, Object.keys(CONSTANTES.NATUREZAS_LITIGIO));
+            if (!ato.acordo) addErro(ato.linhaBase, loc, null, "acordo (SIM/NÃO) é obrigatório.", "Obrigatoriedade", codAto, ["SIM", "NÃO"]);
+        }
 
-        // 2.2. Referentes
-        const exigeRef = ['5', '6', '7'].includes(ato.tipoAtoCep) || (ato.tipoAtoCep === '1' && ato.naturezaEscritura === '35');
+        // 2.2. Validação de Referentes (Atos de Revogação/Rerratificação)
+        const exigeRef = ['5', '6', '7'].includes(codAto) || (codAto === '1' && ato.naturezaEscritura === '35');
         if (exigeRef && ato.referentes.length === 0) {
-            addErro(ato.linhaBase, loc, null, "Atos de Revogação, Renúncia, Substabelecimento ou Rerratificação exigem grupo Referentes.", "Regra de Negócio");
+            addErro(ato.linhaBase, loc, null, "Este ato exige o grupo de Referentes (ato antecessor).", "Regra de Negócio", codAto);
         }
 
-        // 2.4. Partes
+        // 2.3. Validação de Partes
         if (ato.partes.length === 0) {
-            addErro(ato.linhaBase, loc, null, "Pelo menos uma parte é obrigatória por ato.", "Obrigatoriedade");
+            addErro(ato.linhaBase, loc, null, "Pelo menos uma parte é obrigatória.", "Obrigatoriedade", codAto);
         } else {
             ato.partes.forEach(p => {
-                if (!p.tipoDoc) addErro(p.linha, loc, p.nome, "tipoDocumento da parte é obrigatório.", "Obrigatoriedade", CONSTANTES.TIPOS_DOCUMENTO);
-                if (!p.qualidade) addErro(p.linha, loc, p.nome, "qualidade da parte é obrigatória.", "Obrigatoriedade", CONSTANTES.QUALIDADES_PARTE);
-                
-                // Validação Condicional do Número do Documento
-                const tiposQueExigemDoc = ['CPF', 'CNPJ', 'RNM'];
-                if (tiposQueExigemDoc.includes(p.tipoDoc?.toUpperCase()) && !p.numDoc) {
-                    addErro(p.linha, loc, p.nome, `O número do documento é obrigatório quando o tipo informado é ${p.tipoDoc}.`, "Obrigatoriedade");
-                }
-
-                if (p.tipoDoc?.toUpperCase() === 'CPF' && p.numDoc) {
-                    if (!isCpfValido(p.numDoc)) addErro(p.linha, loc, p.nome, `CPF informado (${p.numDoc}) é matematicamente inválido.`, "Validação Matemática");
+                if (p.tipoDoc?.toUpperCase() === 'CPF' && !isCpfValido(p.numDoc)) {
+                    addErro(p.linha, loc, p.nome, `CPF (${p.numDoc}) é inválido.`, "Validação Matemática", codAto);
                 }
                 
-                if (p.qualidade && !CONSTANTES.QUALIDADES_PARTE.includes(p.qualidade.toUpperCase())) {
-                    addErro(p.linha, loc, p.nome, `Qualidade '${p.qualidade}' inválida.`, "Domínio Inválido", CONSTANTES.QUALIDADES_PARTE);
+                const qualValida = CONSTANTES.QUALIDADES_PARTE.includes(p.qualidade?.toUpperCase());
+                if (p.qualidade && !qualValida) {
+                    addErro(p.linha, loc, p.nome, `Qualidade '${p.qualidade}' inválida.`, "Domínio", codAto, CONSTANTES.QUALIDADES_PARTE);
                 }
             });
         }
@@ -174,9 +172,7 @@ export const validarXmlCep = async (filePath) => {
 };
 
 /**
- * Aplica correções em um XML CEP baseado em um array de instruções
- * @param {string} filePath - Caminho do arquivo original
- * @param {Array} correcoes - Lista de objetos { linhaDoArquivo, campo, novoValor }
+ * APLICAÇÃO DE CORREÇÕES (Otimizada com Map)
  */
 export const aplicarCorrecoesXml = async (filePath, correcoes) => {
     const xmlString = fs.readFileSync(filePath, 'utf-8');
@@ -184,27 +180,25 @@ export const aplicarCorrecoesXml = async (filePath, correcoes) => {
     const xmlDoc = parser.parseFromString(xmlString, "text/xml");
     const atosNodeList = xmlDoc.getElementsByTagName("AtoCep");
 
+    // Indexação O(1) por linha
+    const nodesByLine = new Map();
+    for (let i = 0; i < atosNodeList.length; i++) {
+        nodesByLine.set(atosNodeList[i].lineNumber, atosNodeList[i]);
+    }
+
     correcoes.forEach(conserto => {
-        // Busca o nó AtoCep que corresponde à linha exata do erro
-        for (let i = 0; i < atosNodeList.length; i++) {
-            const node = atosNodeList[i];
-            
-            // O xmldom nos dá a linha exata onde a tag <AtoCep> começa
-            if (node.lineNumber === conserto.linhaDoArquivo) {
-                let tag = node.getElementsByTagName(conserto.campo)[0];
-                
-                if (tag) {
-                    tag.textContent = conserto.novoValor;
-                } else {
-                    // Se a tag não existir (ex: RegimeBens ausente), nós a criamos
-                    const novaTag = xmlDoc.createElement(conserto.campo);
-                    novaTag.textContent = conserto.novoValor;
-                    node.appendChild(novaTag);
-                }
+        const node = nodesByLine.get(conserto.linhaDoArquivo);
+        if (node) {
+            let tag = node.getElementsByTagName(conserto.campo)[0];
+            if (tag) {
+                tag.textContent = conserto.novoValor;
+            } else {
+                const novaTag = xmlDoc.createElement(conserto.campo);
+                novaTag.textContent = conserto.novoValor;
+                node.appendChild(novaTag);
             }
         }
     });
 
-    const serializer = new XMLSerializer();
-    return serializer.serializeToString(xmlDoc);
+    return new XMLSerializer().serializeToString(xmlDoc);
 };

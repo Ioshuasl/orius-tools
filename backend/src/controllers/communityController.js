@@ -40,31 +40,39 @@ export const createPage = async (req, res) => {
 export const getPublications = async (req, res) => {
     try {
         const { search, system, tag } = req.query;
-        
-        // Filtro base: apenas páginas que não possuem pai (Root Pages)
         let whereClause = { parentId: null };
 
         if (search) {
-            whereClause.title = { [Op.iLike]: `%${search}%` };
+            const searchLower = `%${search.toLowerCase()}%`;
+            
+            whereClause[Op.or] = [
+                { title: { [Op.iLike]: searchLower } }, // Busca no título
+                // BUSCA EM TAGS: Verifica se o array de tags contém o termo buscado
+                { tags: { [Op.contains]: [search.toUpperCase()] } }, 
+                // BUSCA NO CONTEÚDO (JSONB):
+                sequelize.where(
+                    sequelize.cast(sequelize.col('content'), 'text'),
+                    { [Op.iLike]: searchLower }
+                )
+            ];
         }
+
         if (system) {
             whereClause.system = system;
         }
+        
+        // Se houver um filtro de tag específico vindo do select lateral
         if (tag) {
             whereClause.tags = { [Op.contains]: [tag] };
         }
 
         const publications = await CommunityPage.findAll({
             where: whereClause,
-            attributes: ['id', 'title', 'system', 'tags', 'createdAt'], // Não trazemos o content aqui para performance
+            attributes: ['id', 'title', 'system', 'tags', 'createdAt'],
             order: [['createdAt', 'DESC']]
         });
 
-        res.json({
-            success: true,
-            total: publications.length,
-            data: publications
-        });
+        res.json({ success: true, total: publications.length, data: publications });
     } catch (error) {
         res.status(500).json({ error: 'Erro ao buscar publicações.' });
     }
@@ -111,25 +119,28 @@ export const getPageDetail = async (req, res) => {
         const { id } = req.params;
 
         const page = await CommunityPage.findByPk(id, {
-            include: [
-                { 
-                    model: CommunityPage, 
-                    as: 'subPages', 
-                    attributes: ['id', 'title'] // Apenas o índice das subpáginas
-                }
-            ]
+            include: [{ model: CommunityPage, as: 'subPages', attributes: ['id', 'title'] }]
         });
 
-        if (!page) {
-            return res.status(404).json({ error: 'Página não encontrada.' });
-        }
+        if (!page) return res.status(404).json({ error: 'Página não encontrada.' });
 
-        res.json({
-            success: true,
-            data: page
-        });
+        // Mapeia os blocos de 'page' para garantir que o título venha do banco, não do JSON estático
+        const updatedContent = await Promise.all(page.content.map(async (block) => {
+            if (block.type === 'page' && block.data.pageId) {
+                const subPage = await CommunityPage.findByPk(block.data.pageId, { attributes: ['title'] });
+                return {
+                    ...block,
+                    data: { ...block.data, title: subPage ? subPage.title : block.data.title }
+                };
+            }
+            return block;
+        }));
+
+        page.content = updatedContent;
+
+        res.json({ success: true, data: page });
     } catch (error) {
-        res.status(500).json({ error: 'Erro ao buscar detalhes da página.' });
+        res.status(500).json({ error: 'Erro ao buscar detalhes.' });
     }
 };
 

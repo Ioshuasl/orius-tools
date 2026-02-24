@@ -2,6 +2,7 @@ import fs from 'fs';
 import path from 'path';
 import { validarXmlCep, aplicarCorrecoesXml as aplicarCep } from '../services/cepService.js';
 import { validarXmlCesdi, aplicarCorrecoesXml as aplicarCesdi } from '../services/cesdiService.js';
+import { validarXmlRcto, aplicarCorrecoesRcto } from '../services/rctoService.js';
 
 /**
  * Funções Auxiliares de Resposta
@@ -97,5 +98,41 @@ export const corrigirCesdiXml = async (req, res) => {
     } catch (error) {
         if (file) try { fs.unlinkSync(file.path); } catch (e) { }
         res.status(500).json({ error: 'Erro ao corrigir CESDI.', details: error.message });
+    }
+};
+
+// --- CONTROLLER RCTO ---
+
+export const validarRctoXml = async (req, res) => {
+    if (!req.file) return res.status(400).json({ error: 'Nenhum ficheiro XML enviado.' });
+    try {
+        const result = await validarXmlRcto(req.file.path);
+        responderValidacao(res, result, req.file.path);
+    } catch (error) {
+        if (req.file) try { fs.unlinkSync(req.file.path); } catch (e) { }
+        res.status(500).json({ error: 'Erro ao validar RCTO.', details: error.message });
+    }
+};
+
+export const corrigirRctoXml = async (req, res) => {
+    const file = req.files ? req.files.find(f => f.fieldname === 'file') : null;
+    if (!file || !req.body.correcoes) return res.status(400).json({ error: 'Dados insuficientes.' });
+
+    const tempPath = path.join(path.dirname(file.path), `fixed_rcto_${Date.now()}.xml`);
+    try {
+        const correcoes = JSON.parse(req.body.correcoes);
+        const xml = await aplicarCorrecoesRcto(file.path, correcoes);
+        
+        fs.writeFileSync(tempPath, xml);
+        const novaValidacao = await validarXmlRcto(tempPath);
+
+        // Limpeza dos ficheiros temporários
+        try { fs.unlinkSync(file.path); } catch (e) { }
+        try { fs.unlinkSync(tempPath); } catch (e) { }
+
+        responderCorrecao(res, xml, novaValidacao);
+    } catch (error) {
+        if (file) try { fs.unlinkSync(file.path); } catch (e) { }
+        res.status(500).json({ error: 'Erro ao corrigir RCTO.', details: error.message });
     }
 };

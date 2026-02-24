@@ -1,6 +1,6 @@
-import React, { useState, type DragEvent, useMemo } from 'react';
-import { 
-  FileSpreadsheet, Search, RefreshCcw, Activity, 
+import { useState, type DragEvent, useMemo, useEffect } from 'react';
+import {
+  FileSpreadsheet, Search, RefreshCcw, Activity,
   ChevronLeft, ChevronRight, Download, Network
 } from 'lucide-react';
 import { toast } from 'sonner';
@@ -30,11 +30,22 @@ export default function TabelaEmolumentos() {
     e.preventDefault();
     e.stopPropagation();
     setDragActive(false);
-    
+
     if (e.dataTransfer.files && e.dataTransfer.files[0]) {
       validateAndSetFile(e.dataTransfer.files[0]);
     }
   };
+
+  useEffect(() => {
+    const pathAtual = window.location.pathname;
+    const salvos = localStorage.getItem('orius_recent_modules');
+    let lista: string[] = salvos ? JSON.parse(salvos) : [];
+
+    // Remove se já existir (para evitar duplicatas) e adiciona no início
+    lista = [pathAtual, ...lista.filter(p => p !== pathAtual)].slice(0, 5); // Mantém os 5 últimos
+
+    localStorage.setItem('orius_recent_modules', JSON.stringify(lista));
+  }, []);
 
   const validateAndSetFile = (file: File) => {
     const isExcel = file.type.includes('spreadsheetml') || file.name.endsWith('.xlsx') || file.name.endsWith('.xls');
@@ -47,7 +58,7 @@ export default function TabelaEmolumentos() {
 
   const handleConvert = async () => {
     if (!file) return;
-    
+
     setLoading(true);
     const toastId = toast.loading("Extraindo e parametrizando dados...");
 
@@ -66,10 +77,10 @@ export default function TabelaEmolumentos() {
   // Filtro
   const filteredData = useMemo(() => {
     if (!result) return [];
-    setCurrentPage(1); 
+    setCurrentPage(1);
     const lowerSearch = searchTerm.toLowerCase();
-    
-    return result.data.filter(item => 
+
+    return result.data.filter(item =>
       item.descricao_selo.toLowerCase().includes(lowerSearch) ||
       item.id_selo.toString().includes(lowerSearch) ||
       item.sistema.toLowerCase().includes(lowerSearch) ||
@@ -104,7 +115,7 @@ export default function TabelaEmolumentos() {
             </div>
           </div>
           <div className="flex items-center gap-2">
-            <button 
+            <button
               onClick={() => {
                 const blob = new Blob([JSON.stringify(result, null, 2)], { type: "application/json" });
                 const url = URL.createObjectURL(blob);
@@ -117,8 +128,8 @@ export default function TabelaEmolumentos() {
             >
               <Download size={14} /> Exportar JSON
             </button>
-            <button 
-              onClick={() => {setResult(null); setFile(null); setSearchTerm('');}}
+            <button
+              onClick={() => { setResult(null); setFile(null); setSearchTerm(''); }}
               className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-gray-600 dark:text-gray-300 bg-gray-100 dark:bg-gray-700 rounded border border-gray-200 dark:border-gray-600 hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors"
             >
               <RefreshCcw size={14} /> Novo
@@ -141,9 +152,9 @@ export default function TabelaEmolumentos() {
             <div className="p-3 border-b border-gray-100 dark:border-gray-700 flex justify-between items-center gap-4 bg-gray-50/50 dark:bg-gray-800/50">
               <div className="relative w-full max-w-sm">
                 <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
-                <input 
-                  type="text" 
-                  placeholder="Buscar código, sistema, ato..." 
+                <input
+                  type="text"
+                  placeholder="Buscar código, sistema, ato..."
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
                   className="w-full pl-8 pr-3 py-1.5 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded text-xs text-gray-900 dark:text-white focus:outline-none focus:border-orange-500 dark:focus:border-orange-500 transition-colors placeholder-gray-400"
@@ -170,10 +181,10 @@ export default function TabelaEmolumentos() {
                       <td className="px-4 py-2 font-semibold text-gray-700 dark:text-gray-300">
                         {item.id_selo}
                       </td>
-                      
+
                       <td className="px-4 py-2">
                         {item.id_selo_combinado ? (
-                          <div 
+                          <div
                             className="bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 border border-gray-200 dark:border-gray-600 px-1.5 py-0.5 rounded text-[10px] font-medium cursor-help truncate max-w-[70px]"
                             title={formatSeloCombinado(item.id_selo_combinado)}
                           >
@@ -187,27 +198,27 @@ export default function TabelaEmolumentos() {
                       <td className="px-4 py-2 text-gray-600 dark:text-gray-400 leading-snug whitespace-normal">
                         {item.descricao_selo}
                       </td>
-                      
+
                       <td className="px-4 py-2 whitespace-normal">
                         <div className="flex flex-wrap gap-1">
                           <span className="bg-orange-50 dark:bg-orange-500/10 text-orange-700 dark:text-orange-400 px-1.5 py-0.5 rounded text-[10px] font-bold border border-orange-100 dark:border-orange-500/20">
                             {item.sistema}
                           </span>
-                          
+
                           {item.ato && (
-                             <span className="bg-blue-50 dark:bg-blue-500/10 text-blue-700 dark:text-blue-400 px-1.5 py-0.5 rounded text-[10px] font-semibold border border-blue-100 dark:border-blue-500/20" title="Ato">
-                               {item.ato}
-                             </span>
+                            <span className="bg-blue-50 dark:bg-blue-500/10 text-blue-700 dark:text-blue-400 px-1.5 py-0.5 rounded text-[10px] font-semibold border border-blue-100 dark:border-blue-500/20" title="Ato">
+                              {item.ato}
+                            </span>
                           )}
                           {item.condicao_pagamento && (
-                             <span className="bg-purple-50 dark:bg-purple-500/10 text-purple-700 dark:text-purple-400 px-1.5 py-0.5 rounded text-[10px] font-semibold border border-purple-100 dark:border-purple-500/20" title="Condição">
-                               {item.condicao_pagamento.replace(/_/g, ' ')}
-                             </span>
+                            <span className="bg-purple-50 dark:bg-purple-500/10 text-purple-700 dark:text-purple-400 px-1.5 py-0.5 rounded text-[10px] font-semibold border border-purple-100 dark:border-purple-500/20" title="Condição">
+                              {item.condicao_pagamento.replace(/_/g, ' ')}
+                            </span>
                           )}
                           {item.condicao_especial && item.condicao_especial !== 'PADRAO' && (
-                             <span className="bg-green-50 dark:bg-green-500/10 text-green-700 dark:text-green-400 px-1.5 py-0.5 rounded text-[10px] font-semibold border border-green-100 dark:border-green-500/20">
-                               {item.condicao_especial.replace(/_/g, ' ')}
-                             </span>
+                            <span className="bg-green-50 dark:bg-green-500/10 text-green-700 dark:text-green-400 px-1.5 py-0.5 rounded text-[10px] font-semibold border border-green-100 dark:border-green-500/20">
+                              {item.condicao_especial.replace(/_/g, ' ')}
+                            </span>
                           )}
                         </div>
                       </td>
@@ -239,7 +250,7 @@ export default function TabelaEmolumentos() {
               <div className="p-3 border-t border-gray-100 dark:border-gray-700 flex items-center justify-between text-xs text-gray-500 dark:text-gray-400 bg-gray-50/50 dark:bg-gray-800/50">
                 <span>Mostrando {(currentPage - 1) * itemsPerPage + 1} a {Math.min(currentPage * itemsPerPage, filteredData.length)} de {filteredData.length}</span>
                 <div className="flex items-center gap-1">
-                  <button 
+                  <button
                     onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
                     disabled={currentPage === 1}
                     className="p-1 rounded hover:bg-gray-200 dark:hover:bg-gray-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
@@ -247,7 +258,7 @@ export default function TabelaEmolumentos() {
                     <ChevronLeft size={14} />
                   </button>
                   <span className="font-medium text-gray-900 dark:text-white px-2">Pág {currentPage} / {totalPages}</span>
-                  <button 
+                  <button
                     onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
                     disabled={currentPage === totalPages}
                     className="p-1 rounded hover:bg-gray-200 dark:hover:bg-gray-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
@@ -269,7 +280,7 @@ export default function TabelaEmolumentos() {
       <div className="max-w-md w-full space-y-6">
         <div className="text-center space-y-2">
           <div className="inline-flex items-center justify-center p-3 bg-orange-100 dark:bg-orange-500/10 text-orange-500 dark:text-orange-400 rounded-full mb-1">
-             <FileSpreadsheet size={28} />
+            <FileSpreadsheet size={28} />
           </div>
           <h1 className="text-2xl font-bold text-gray-900 dark:text-white tracking-tight">Tabela de Emolumentos</h1>
           <p className="text-sm text-gray-500 dark:text-gray-400 max-w-sm mx-auto">
@@ -278,24 +289,23 @@ export default function TabelaEmolumentos() {
         </div>
 
         <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-6 transition-colors duration-200">
-          <div 
+          <div
             onDragEnter={(e) => handleDrag(e, true)}
             onDragLeave={(e) => handleDrag(e, false)}
             onDragOver={(e) => handleDrag(e, true)}
             onDrop={handleDrop}
-            className={`relative flex flex-col items-center justify-center p-6 border-2 border-dashed rounded-lg transition-all mb-4 ${
-              dragActive 
-                ? 'border-orange-500 bg-orange-50 dark:bg-orange-500/10' 
-                : file 
-                  ? 'border-orange-400 bg-orange-50/50 dark:bg-orange-500/5' 
+            className={`relative flex flex-col items-center justify-center p-6 border-2 border-dashed rounded-lg transition-all mb-4 ${dragActive
+                ? 'border-orange-500 bg-orange-50 dark:bg-orange-500/10'
+                : file
+                  ? 'border-orange-400 bg-orange-50/50 dark:bg-orange-500/5'
                   : 'border-gray-300 dark:border-gray-600 hover:border-orange-300 dark:hover:border-orange-500/50 hover:bg-gray-50 dark:hover:bg-gray-700/50'
-            }`}
+              }`}
           >
-            <input 
-              type="file" 
-              accept=".xlsx, .xls" 
-              onChange={(e) => e.target.files && validateAndSetFile(e.target.files[0])} 
-              className="absolute inset-0 w-full h-full opacity-0 cursor-pointer" 
+            <input
+              type="file"
+              accept=".xlsx, .xls"
+              onChange={(e) => e.target.files && validateAndSetFile(e.target.files[0])}
+              className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
               title="Selecione o arquivo Excel"
             />
             <div className={`p-3 rounded-full mb-3 shadow-sm transition-colors ${file ? 'bg-orange-500 text-white' : 'bg-gray-100 dark:bg-gray-700 text-gray-400 dark:text-gray-500'}`}>
@@ -312,13 +322,12 @@ export default function TabelaEmolumentos() {
           <button
             onClick={handleConvert}
             disabled={loading || !file}
-            className={`w-full py-3 rounded-lg font-bold text-sm shadow-sm transition-all flex items-center justify-center gap-2 ${
-              loading 
-                ? 'bg-orange-400 text-white cursor-wait' 
-                : !file 
-                  ? 'bg-gray-100 dark:bg-gray-700 text-gray-400 dark:text-gray-500 cursor-not-allowed' 
+            className={`w-full py-3 rounded-lg font-bold text-sm shadow-sm transition-all flex items-center justify-center gap-2 ${loading
+                ? 'bg-orange-400 text-white cursor-wait'
+                : !file
+                  ? 'bg-gray-100 dark:bg-gray-700 text-gray-400 dark:text-gray-500 cursor-not-allowed'
                   : 'bg-orange-500 hover:bg-orange-600 text-white hover:shadow-md'
-            }`}
+              }`}
           >
             {loading ? <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white" /> : <RefreshCcw size={16} />}
             {loading ? 'Processando...' : 'Converter para JSON'}

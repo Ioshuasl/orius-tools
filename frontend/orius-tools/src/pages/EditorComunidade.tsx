@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { ArrowLeft, Activity, CloudCheck, CloudUpload, AlertTriangle } from 'lucide-react';
+import { ArrowLeft, Activity, CloudCheck, CloudUpload, AlertTriangle, X, Hash, Settings2, ChevronDown } from 'lucide-react';
 import { toast } from 'sonner';
 
 // DND Kit
@@ -124,17 +124,37 @@ export default function EditorComunidade() {
     return () => document.removeEventListener('selectionchange', handleSelection);
   }, [handleSelection]);
 
+  // EditorComunidade.tsx
+
   const loadData = useCallback(async (pId: string) => {
     setLoading(true);
     try {
       const [pRes, bRes] = await Promise.all([getPageDetailService(pId), getBreadcrumbsService(pId)]);
       const data = pRes.data as CommunityPage;
+
+      // Sincroniza títulos das subpáginas baseados no array 'subPages' que veio do include
+      if (data.content && data.subPages) {
+        data.content = data.content.map(block => {
+          if (block.type === 'page') {
+            const actualSubPage = data.subPages?.find(sp => sp.id === block.data.pageId);
+            if (actualSubPage) {
+              return { ...block, data: { ...block.data, title: actualSubPage.title } };
+            }
+          }
+          return block;
+        });
+      }
+
       if (!data.content || data.content.length === 0) {
         data.content = [{ id: Math.random().toString(36).substring(2, 11), type: 'text', data: { text: "" } }];
       }
       setPage(data);
       setBreadcrumbs(bRes.data as BreadcrumbItem[]);
-    } catch { toast.error("Erro ao carregar."); } finally { setLoading(false); }
+    } catch (error) {
+      toast.error("Erro ao carregar.");
+    } finally {
+      setLoading(false);
+    }
   }, []);
 
   useEffect(() => { if (id) loadData(id); }, [id, loadData]);
@@ -219,14 +239,14 @@ export default function EditorComunidade() {
     <div className="flex h-full bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100 overflow-hidden relative" onClick={() => setSlashMenuPos(null)}>
       <FloatingToolbar position={toolbarPosition} isVisible={showToolbar} />
 
-      <TableOfContents 
-        blocks={page?.content || []} 
+      <TableOfContents
+        blocks={page?.content || []}
         onScrollToBlock={(id) => {
-            const el = document.querySelector(`[data-id="${id}"]`);
-            if (el) el.scrollIntoView({ behavior: 'smooth', block: 'center' });
-            setFocusBlockId(id);
-        }} 
-        scrollContainerRef={mainScrollRef} 
+          const el = document.querySelector(`[data-id="${id}"]`);
+          if (el) el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+          setFocusBlockId(id);
+        }}
+        scrollContainerRef={mainScrollRef}
       />
 
       {slashMenuPos && (
@@ -246,11 +266,10 @@ export default function EditorComunidade() {
 
           {/* NOVO INDICADOR DE STATUS (No lugar do botão de salvar) */}
           <div className="flex items-center gap-3 pr-2">
-            <div className={`flex items-center gap-2 text-[10px] font-black uppercase tracking-widest px-4 py-2 rounded-lg transition-all duration-300 border ${
-                isSaving ? 'bg-orange-50/50 dark:bg-orange-950/20 border-orange-100 dark:border-orange-900/30 text-orange-500' : 
-                hasUnsavedChanges ? 'bg-blue-50/50 dark:bg-blue-950/20 border-blue-100 dark:border-blue-900/30 text-blue-500' : 
+            <div className={`flex items-center gap-2 text-[10px] font-black uppercase tracking-widest px-4 py-2 rounded-lg transition-all duration-300 border ${isSaving ? 'bg-orange-50/50 dark:bg-orange-950/20 border-orange-100 dark:border-orange-900/30 text-orange-500' :
+              hasUnsavedChanges ? 'bg-blue-50/50 dark:bg-blue-950/20 border-blue-100 dark:border-blue-900/30 text-blue-500' :
                 'bg-gray-50/50 dark:bg-gray-800/50 border-gray-100 dark:border-gray-800 text-gray-400'
-            }`}>
+              }`}>
               {isSaving ? (
                 <> <CloudUpload size={14} className="animate-bounce" /> Salvando... </>
               ) : hasUnsavedChanges ? (
@@ -270,6 +289,97 @@ export default function EditorComunidade() {
             placeholder="Título da Página..."
           />
 
+          {/* Propriedades da Página - Estilo Notion */}
+          <div className="mt-4 mb-10 space-y-0.5 border-t border-gray-100 dark:border-gray-800 pt-8">
+
+            {/* Propriedade: Sistema */}
+            <div className="flex items-center group px-2 py-1.5 hover:bg-gray-50 dark:hover:bg-gray-800/50 rounded-md transition-colors duration-200">
+              <div className="flex items-center gap-2 w-36 shrink-0 text-gray-400 dark:text-gray-500">
+                <Settings2 size={14} />
+                <span className="text-sm font-medium">Sistema</span>
+              </div>
+
+              <div className="relative flex-1">
+                <select
+                  // Usamos || '' para garantir que o componente seja controlado e aceite a string vazia como "Geral"
+                  value={page?.system || ''}
+                  onChange={(e) => {
+                    const newValue = e.target.value;
+                    setPage(p => p ? { ...p, system: newValue === "" ? null : newValue } : null);
+                    setHasUnsavedChanges(true); // Dispara o salvamento inteligente
+                  }}
+                  className="w-full bg-transparent border-none p-0 text-sm font-medium text-gray-700 dark:text-gray-300 focus:ring-0 cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700/50 rounded px-2 py-0.5 -ml-2 transition-all appearance-none"
+                >
+                  {/* Opção alterada de Vazio para Geral */}
+                  <option value="" className="dark:bg-gray-800">Geral</option>
+                  {[
+                    'TABELIONATO DE NOTAS',
+                    'PROTESTO DE TÍTULOS',
+                    'REGISTRO CIVIL',
+                    'REGISTRO DE IMÓVEIS',
+                    'REGISTRO DE TÍTULOS E DOCUMENTO',
+                    'CAIXA',
+                    'NOTA FISCAL'
+                  ].map(sys => (
+                    <option key={sys} value={sys} className="dark:bg-gray-800">{sys}</option>
+                  ))}
+                </select>
+                <ChevronDown size={12} className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-300 opacity-0 group-hover:opacity-100 pointer-events-none transition-opacity" />
+              </div>
+            </div>
+
+            {/* Propriedade: Tags */}
+            <div className="flex items-start group px-2 py-1.5 hover:bg-gray-50 dark:hover:bg-gray-800/50 rounded-md transition-colors duration-200">
+              <div className="flex items-center gap-2 w-36 shrink-0 text-gray-400 dark:text-gray-500 mt-1">
+                <Hash size={14} />
+                <span className="text-sm font-medium">Tags</span>
+              </div>
+
+              <div className="flex flex-wrap gap-1.5 flex-1 items-center min-h-[28px]">
+                {page?.tags.map((tag, idx) => (
+                  <span
+                    key={idx}
+                    className="flex items-center gap-1.5 px-2 py-0.5 bg-orange-50 dark:bg-orange-500/10 text-orange-600 dark:text-orange-400 rounded-md text-xs font-semibold border border-orange-100 dark:border-orange-500/20 group/tag transition-all"
+                  >
+                    {tag}
+                    <button
+                      onClick={() => {
+                        const newTags = page.tags.filter((_, i) => i !== idx);
+                        setPage(p => p ? { ...p, tags: newTags } : null);
+                        setHasUnsavedChanges(true); // Dispara o salvamento ao remover
+                      }}
+                      className="hover:bg-orange-200 dark:hover:bg-orange-500/30 rounded-sm p-0.5 transition-colors"
+                    >
+                      <X size={10} />
+                    </button>
+                  </span>
+                ))}
+
+                <input
+                  type="text"
+                  placeholder="Adicionar tag..."
+                  className="flex-1 bg-transparent border-none p-0 text-sm focus:ring-0 placeholder:text-gray-300 dark:placeholder:text-gray-600 min-w-[140px] h-full"
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') {
+                      e.preventDefault();
+                      const val = e.currentTarget.value.trim().toUpperCase();
+                      if (val && !page?.tags.includes(val)) {
+                        setPage(p => p ? { ...p, tags: [...(p.tags || []), val] } : null);
+                        setHasUnsavedChanges(true); // Dispara o salvamento ao adicionar
+                        e.currentTarget.value = '';
+                      }
+                    } else if (e.key === 'Backspace' && e.currentTarget.value === '' && page?.tags.length) {
+                      const newTags = [...page.tags];
+                      newTags.pop();
+                      setPage(p => p ? { ...p, tags: newTags } : null);
+                      setHasUnsavedChanges(true); // Dispara o salvamento ao apagar com backspace
+                    }
+                  }}
+                />
+              </div>
+            </div>
+          </div>
+
           <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
             <SortableContext items={page?.content.map(b => b.id) || []} strategy={verticalListSortingStrategy}>
               {page?.content.map((block, index) => (
@@ -281,16 +391,16 @@ export default function EditorComunidade() {
                     updateBlock={updateBlock}
                     updateBlockType={updateBlockType}
                     removeBlock={(id) => {
-                        setPage(prev => prev ? { ...prev, content: prev.content.filter(b => b.id !== id) } : null);
-                        setHasUnsavedChanges(true);
+                      setPage(prev => prev ? { ...prev, content: prev.content.filter(b => b.id !== id) } : null);
+                      setHasUnsavedChanges(true);
                     }}
                     addBlock={addBlock}
                     focusBlockId={focusBlockId}
                     onMoveFocus={(dir) => {
-                        const nextIndex = dir === 'up' ? index - 1 : index + 1;
-                        if (nextIndex >= 0 && nextIndex < page.content.length) {
-                            setFocusBlockId(page.content[nextIndex].id);
-                        }
+                      const nextIndex = dir === 'up' ? index - 1 : index + 1;
+                      if (nextIndex >= 0 && nextIndex < page.content.length) {
+                        setFocusBlockId(page.content[nextIndex].id);
+                      }
                     }}
                     onBackspaceEmpty={() => removeBlockAndFocusPrev(index)}
                     onSlash={(idx: number, rect: DOMRect, mode: 'replace' | 'add') => {

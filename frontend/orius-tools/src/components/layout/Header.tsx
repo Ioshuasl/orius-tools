@@ -42,7 +42,7 @@ export function Header({ routeTitles }: HeaderProps) {
           <div className="bg-orange-100 dark:bg-orange-900/50 p-1.5 rounded-full text-orange-600 dark:text-orange-400">
             <User size={16} />
           </div>
-          <span className="hidden sm:inline">Ioshua</span>
+          <span className="hidden sm:inline">Usuário</span>
         </button>
       </div>
     </header>

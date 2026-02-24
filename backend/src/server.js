@@ -10,6 +10,7 @@ import converterRoutes from './routes/converterRoutes.js';
 import comparisonRoutes from './routes/comparisonRoutes.js';
 import censecRoutes from './routes/censecRoutes.js';
 import communityRoutes from './routes/communityRoutes.js';
+import doiRoutes from './routes/doiRoutes.js'
 import { swaggerSpec } from './config/swagger.js';
 
 const app = express();
@@ -45,6 +46,7 @@ app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec));
 app.use('/api/converter', converterRoutes);
 app.use('/api/comparar', comparisonRoutes);
 app.use('/api/censec', censecRoutes);
+app.use('/api/doi', doiRoutes);
 app.use('/api/community', communityRoutes);
 
 // Servir arquivos estáticos da pasta uploads

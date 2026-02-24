@@ -4,7 +4,9 @@ import {
     validarCepXml, 
     corrigirCepXml, 
     validarCesdiXml, 
-    corrigirCesdiXml 
+    corrigirCesdiXml,
+    corrigirRctoXml,
+    validarRctoXml
 } from '../controllers/censecController.js';
 
 const router = express.Router();
@@ -31,5 +33,16 @@ router.post('/validar-cesdi', upload.single('file'), validarCesdiXml);
 
 // Upload múltiplo (any) para suportar o arquivo + JSON de correções
 router.post('/corrigir-cesdi', upload.any(), corrigirCesdiXml);
+
+/**
+ * ROTAS PARA RCTO (Registro Central de Testamentos Online)
+ * Focado exclusivamente em atos de Testamento e Revogações.
+ */
+
+// Validação inicial do XML de Testamentos
+router.post('/validar-rcto', upload.single('file'), validarRctoXml);
+
+// Aplicação de correções enviadas pelo frontend
+router.post('/corrigir-rcto', upload.any(), corrigirRctoXml);
 
 export default router;

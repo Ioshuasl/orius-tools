@@ -4,7 +4,7 @@ import type { ApiResponse, ApiResponseCensec, ApiResponseCommunity, ApiResponseT
 // Criação da instância do Axios
 export const api = axios.create({
   // Tenta pegar do .env, se não existir usa localhost
-  baseURL: import.meta.env.VITE_API_URL || 'http://192.168.1.140:3000/api',
+  baseURL: import.meta.env.VITE_API_URL || 'http://localhost:3000/api',
   timeout: 30000, // 30 segundos (upload de arquivos pode demorar)
 });
 
@@ -198,6 +198,90 @@ export const corrigirCesdiService = async (
   const errorCount = parseInt(response.headers['x-validation-errors'] || '0', 10);
 
   console.log(response.data)
+
+  return {
+    data: response.data,
+    success,
+    errorCount
+  };
+};
+
+/**
+ * RCTO - Validação Inicial de XML de Testamentos
+ */
+export const validarRctoService = async (arquivoXml: File): Promise<ApiResponseCensec> => {
+  const formData = new FormData();
+  formData.append('file', arquivoXml);
+
+  const response = await api.post<ApiResponseCensec>('/censec/validar-rcto', formData, {
+    headers: { 'Content-Type': 'multipart/form-data' },
+  });
+
+  return response.data;
+};
+
+/**
+ * RCTO - Envia correções e retorna o novo XML (Blob) com status de re-validação
+ */
+export const corrigirRctoService = async (
+  arquivoXml: File,
+  correcoes: InstrucaoCorrecao[]
+): Promise<{ data: Blob; success: boolean; errorCount: number }> => {
+  const formData = new FormData();
+  formData.append('file', arquivoXml);
+  formData.append('correcoes', JSON.stringify(correcoes));
+
+  const response = await api.post('/censec/corrigir-rcto', formData, {
+    headers: { 'Content-Type': 'multipart/form-data' },
+    responseType: 'blob',
+  });
+
+  // Captura de metadados de validação via headers
+  const successHeader = response.headers['x-validation-success'];
+  const errorCount = parseInt(response.headers['x-validation-errors'] || '0', 10);
+
+  // Consideramos sucesso se o backend confirmar ou se o contador de erros for zerado
+  const isActuallyValid = successHeader === 'true' || successHeader === true || errorCount === 0;
+
+  return {
+    data: response.data,
+    success: isActuallyValid,
+    errorCount: errorCount
+  };
+};
+
+/**
+ * DOI - Validação Inicial de Lote JSON
+ */
+export const validarDoiService = async (arquivoJson: File): Promise<ApiResponseCensec> => {
+  const formData = new FormData();
+  formData.append('file', arquivoJson);
+
+  const response = await api.post<ApiResponseCensec>('/doi/validar-doi', formData, {
+    headers: { 'Content-Type': 'multipart/form-data' },
+  });
+
+  return response.data;
+};
+
+/**
+ * DOI - Correção e Higienização do JSON Legado
+ */
+export const corrigirDoiService = async (
+  arquivoJson: File,
+  correcoes: InstrucaoCorrecao[]
+): Promise<{ data: Blob; success: boolean; errorCount: number }> => {
+  const formData = new FormData();
+  formData.append('file', arquivoJson);
+  formData.append('correcoes', JSON.stringify(correcoes));
+
+  const response = await api.post('/doi/corrigir-doi', formData, {
+    headers: { 'Content-Type': 'multipart/form-data' },
+    responseType: 'blob',
+  });
+
+  const success = response.headers['x-validation-success'] === 'true';
+  const errorCount = parseInt(response.headers['x-validation-errors'] || '0', 10);
 
   return {
     data: response.data,

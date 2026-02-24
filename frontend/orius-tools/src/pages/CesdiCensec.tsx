@@ -78,7 +78,7 @@ export default function CesdiCensec() {
             .filter(erro => correcoesManuais[erro.linhaDoArquivo])
             .map(erro => {
                 const msg = erro.mensagemDeErro.toLowerCase();
-                let campo = 'nome'; 
+                let campo = 'nome';
 
                 if (msg.includes('responsável')) campo = 'responsavel';
                 else if (msg.includes('casamento')) campo = 'dataCasamento';
@@ -173,6 +173,17 @@ export default function CesdiCensec() {
             }
         }, 150);
     };
+
+    useEffect(() => {
+        const pathAtual = window.location.pathname;
+        const salvos = localStorage.getItem('orius_recent_modules');
+        let lista: string[] = salvos ? JSON.parse(salvos) : [];
+
+        // Remove se já existir (para evitar duplicatas) e adiciona no início
+        lista = [pathAtual, ...lista.filter(p => p !== pathAtual)].slice(0, 5); // Mantém os 5 últimos
+
+        localStorage.setItem('orius_recent_modules', JSON.stringify(lista));
+    }, []);
 
     if (result) {
         return (
@@ -278,7 +289,7 @@ export default function CesdiCensec() {
                                             </td>
                                             <td className="px-6 py-4">
                                                 <div className="text-xs text-red-600 dark:text-red-400 font-bold leading-tight">{erro.mensagemDeErro}</div>
-                                                <div className="text-[9px] text-gray-400 mt-1 uppercase font-bold tracking-widest">{erro.tipoAtoCesdi}</div>
+                                                <div className="text-[9px] text-gray-400 mt-1 uppercase font-bold tracking-widest">{erro.tipoAto}</div>
                                             </td>
                                             <td className="px-6 py-4">
                                                 {erro.opcoesAceitas ? (

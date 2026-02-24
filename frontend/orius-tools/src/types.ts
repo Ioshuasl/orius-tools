@@ -98,7 +98,7 @@ export interface ErroCensec {
   /** * No CESDI, este campo agora recebe o nome amigável do ato (Ex: "Retificação")
    * enviado pelo backend para melhorar a UI/UX.
    */
-  tipoAtoCesdi?: string; 
+  tipoAto?: string; 
   mensagemDeErro: string;
   tipoDeErro: string;
   /** * Lista de opções enviada pelo backend (ex: Qualidades permitidas para aquele ato)

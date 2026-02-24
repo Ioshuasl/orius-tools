@@ -1,41 +1,31 @@
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
-import { Activity } from 'lucide-react';
 
 import { AppLayout } from './components/layout/AppLayout';
+import { ThemeProvider } from './contexts/ThemeContext';
+import Home from './pages/Home';
+import CentralAuditoria from './pages/CentralAuditoria';
 import ComparadorGuias from './pages/ComparadorGuias';
-import { ThemeProvider } from './contexts/ThemeContext'; // <-- Adicionado
 import TabelaEmolumentos from './pages/TabelaEmolumentos';
 import ComunidadeSuporte from './pages/ComunidadeSuporte';
-//import EditorComunidade from './pages/EditorComunidade';
-import CepCensec from './pages/CepCensec';
 import EditorComunidade from './pages/EditorComunidade';
+import CepCensec from './pages/CepCensec';
 import CesdiCensec from './pages/CesdiCensec';
+import RctoCensec from './pages/RctoCensec';
+import Doi from './pages/Doi';
 
 const APP_TITLES: Record<string, string> = {
-  '/': 'Painel de Controle',
+  '/': 'Painel de Controlo',
   '/comparador-guias': 'Comparador de Guias',
   '/tabela-emolumentos': 'Tabela de Emolumentos',
-  '/validar-cep': 'Validador CENSEC / CEP',
-  '/validar-cesdi': 'Validador CENSEC / CESDI',
-  '/comunidade': 'Comunidade de Suporte', // <-- Adicionado
+  '/auditoria': 'Central de Auditoria',
+  '/auditoria/cep': 'Validador CENSEC / CEP',
+  '/auditoria/cesdi': 'Validador CENSEC / CESDI',
+  '/auditoria/rcto': 'Validador CENSEC / RCTO',
+  '/auditoria/doi': 'Validador DOI',
+  '/comunidade': 'Comunidade de Suporte',
   '/assinatura-digital': 'Assinatura Digital',
   '/configuracoes': 'Configurações',
 };
-
-const Home = () => (
-  // Nota: Adicionei classes dark: aqui para a Home já responder ao tema
-  <div className="h-full flex items-center justify-center bg-gray-50/50 dark:bg-gray-900/50 transition-colors">
-    <div className="text-center space-y-4 animate-in zoom-in-95 duration-500">
-      <div className="bg-orange-100 dark:bg-orange-900/30 p-4 rounded-2xl inline-block">
-        <Activity size={48} className="text-orange-500 dark:text-orange-400" />
-      </div>
-      <h1 className="text-3xl font-bold text-gray-900 dark:text-white">Bem-vindo ao OriusTools</h1>
-      <p className="text-gray-500 dark:text-gray-400 max-w-md mx-auto">
-        Seu canivete suíço para auditorias e rotinas notariais.
-      </p>
-    </div>
-  </div>
-);
 
 function App() {
   return (
@@ -43,13 +33,25 @@ function App() {
       <BrowserRouter>
         <Routes>
           <Route path="/" element={<AppLayout routeTitles={APP_TITLES} />}>
+            {/* Dashboard Principal */}
             <Route index element={<Home />} />
+            
             <Route path="comparador-guias" element={<ComparadorGuias />} />
             <Route path="tabela-emolumentos" element={<TabelaEmolumentos />} />
-            <Route path="validar-cep" element={<CepCensec />} /> 
-            <Route path="validar-cesdi" element={<CesdiCensec />} />
+            
+            {/* Hub de Auditoria e Higienização */}
+            <Route path="auditoria">
+              <Route index element={<CentralAuditoria />} />
+              <Route path="cep" element={<CepCensec />} />
+              <Route path="cesdi" element={<CesdiCensec />} />
+              <Route path="rcto" element={<RctoCensec />} />
+              <Route path="doi" element={<Doi />} />
+            </Route>
+
             <Route path="comunidade" element={<ComunidadeSuporte />} />
             <Route path="comunidade/editor/:id" element={<EditorComunidade />} />
+            
+            {/* Redirecionamento de rotas inexistentes */}
             <Route path="*" element={<Navigate to="/" replace />} />
           </Route>
         </Routes>

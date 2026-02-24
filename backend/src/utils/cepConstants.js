@@ -1,19 +1,66 @@
-export const TIPOS_ATO = ['1', '2', '3', '5', '6', '7', '8', '9'];
-export const NATUREZAS_ESCRITURA = [
-    '1', '4', '5', '6', '10', '14', '15', '16', '17', '20', 
-    '21', '22', '23', '24', '25', '26', '28', '30', '31', '33', 
-    '34', '35', '36', '38', '39', '43', '45', '46', '48', '49', 
-    '50', '51', '52', '53', '54', '55', '56', '57', '58', '59', 
-    '60', '61', '62', '63', '70', '71', '72', '74', '75', '76', 
-    '77', '78', '79'
-];
-export const NATUREZAS_USUCAPIAO = ['1', '2', '3', '4', '5'];
-export const TIPOS_DOCUMENTO = ['CPF', 'CNPJ', 'RNM', 'DESCONHECIDO'];
-export const QUALIDADES_PARTE = [
-    'OUTORGADO', 'OUTORGANTE', 'INTERVENIENTE', 
-    'USUFRUTUÁRIO', 'REQUERENTE', 'REQUERIDO', 
-    'CONCILIADOR', 'MEDIADOR'
-];
+/**
+ * CEP - Cartão de Assinaturas / Escrituras e Procurações
+ * Constantes e Tabelas de Domínio baseadas na especificação cep.md
+ */
+
+// 3.1. Tipo do Ato (tipoAtoCep)
+// Mapeamento de códigos para nomes amigáveis para a UI
+export const TIPOS_ATO = {
+    '1': 'Escritura',
+    '2': 'Procuração',
+    '3': 'Procuração para Fins Previdenciários',
+    '5': 'Renúncia de Procuração',
+    '6': 'Revogação de Procuração',
+    '7': 'Subestabelecimento',
+    '8': 'Ata Notarial',
+    '9': 'Ata Notarial de Usucapião',
+    '10': 'Procuração Privada' // Usado apenas em Referentes
+};
+
+// 3.2. Natureza Escritura (naturezaEscritura)
+// Obrigatório se tipoAtoCep = 1
+export const NATUREZAS_ESCRITURA = {
+    '1': 'Acordo Extrajudicial',
+    '4': 'Alienação Fiduciária',
+    '6': 'Compra e Venda',
+    '10': 'Confissão de Dívida / Dação',
+    '15': 'Declaratória de União Estável',
+    '20': 'Dissolução de União Estável',
+    '22': 'Doação',
+    '24': 'Hipoteca',
+    '25': 'Incorporação',
+    '35': 'Rerratificação',
+    '46': 'Usufruto',
+    '69': 'Inventário',
+    '75': 'Conciliação',
+    '76': 'Mediação',
+    '77': 'Afetação',
+    '78': 'Autocuratela',
+    '79': 'Declaratória com diretivas de curatela'
+};
+
+// 3.3. Natureza Ata Notarial de Usucapião (naturezaAtaNotarialDeUsucapiao)
+// Obrigatório se tipoAtoCep = 9
+export const NATUREZAS_USUCAPIAO = {
+    '1': 'Ordinária',
+    '2': 'Extraordinária',
+    '3': 'Especial Rural',
+    '4': 'Especial Urbana',
+    '5': 'Especial Familiar'
+};
+
+// 3.7. Natureza Litígio (naturezaLitigio)
+// Obrigatório para Mediação/Conciliação
+export const NATUREZAS_LITIGIO = {
+    '1': 'Bancário',
+    '2': 'Água',
+    '4': 'Luz',
+    '8': 'Família',
+    '9': 'Locação'
+};
+
+// 3.8. Regime de Bens (regimeBens)
+// Grafia exata exigida para XML
 export const REGIMES_BENS_XML = [
     'Comunhão Parcial', 
     'Comunhão Universal', 
@@ -21,4 +68,12 @@ export const REGIMES_BENS_XML = [
     'Separação Total', 
     'Separação Obrigatória'
 ];
-export const NATUREZAS_LITIGIO = ['1', '2', '4', '8', '9'];
+
+// 3.4 e 3.9. Domínios de Texto Simples
+export const TIPOS_DOCUMENTO = ['CPF', 'CNPJ', 'RNM', 'DESCONHECIDO'];
+
+export const QUALIDADES_PARTE = [
+    'OUTORGADO', 'OUTORGANTE', 'INTERVENIENTE', 
+    'USUFRUTUÁRIO', 'REQUERENTE', 'REQUERIDO', 
+    'CONCILIADOR', 'MEDIADOR'
+];
