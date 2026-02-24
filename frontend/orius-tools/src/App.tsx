@@ -12,6 +12,7 @@ import CepCensec from './pages/CepCensec';
 import CesdiCensec from './pages/CesdiCensec';
 import RctoCensec from './pages/RctoCensec';
 import Doi from './pages/Doi';
+import NormasViewer from './pages/NormasViewer';
 
 const APP_TITLES: Record<string, string> = {
   '/': 'Painel de Controlo',
@@ -22,6 +23,7 @@ const APP_TITLES: Record<string, string> = {
   '/auditoria/cesdi': 'Validador CENSEC / CESDI',
   '/auditoria/rcto': 'Validador CENSEC / RCTO',
   '/auditoria/doi': 'Validador DOI',
+  '/normas': 'Normas Extrajudiciais',
   '/comunidade': 'Comunidade de Suporte',
   '/assinatura-digital': 'Assinatura Digital',
   '/configuracoes': 'Configurações',
@@ -48,6 +50,7 @@ function App() {
               <Route path="doi" element={<Doi />} />
             </Route>
 
+            <Route path="normas" element={<NormasViewer />} />
             <Route path="comunidade" element={<ComunidadeSuporte />} />
             <Route path="comunidade/editor/:id" element={<EditorComunidade />} />
             

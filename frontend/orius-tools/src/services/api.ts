@@ -4,7 +4,7 @@ import type { ApiResponse, ApiResponseCensec, ApiResponseCommunity, ApiResponseT
 // Criação da instância do Axios
 export const api = axios.create({
   // Tenta pegar do .env, se não existir usa localhost
-  baseURL: import.meta.env.VITE_API_URL || 'http://localhost:3000/api',
+  baseURL: import.meta.env.VITE_API_URL || 'http://192.168.1.140:3000/api',
   timeout: 30000, // 30 segundos (upload de arquivos pode demorar)
 });
 
@@ -58,6 +58,8 @@ export const validarCepService = async (arquivoXml: File): Promise<ApiResponseCe
   const response = await api.post<ApiResponseCensec>('/censec/validar-cep', formData, {
     headers: { 'Content-Type': 'multipart/form-data' },
   });
+
+  console.log(response.data)
 
   return response.data;
 };

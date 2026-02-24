@@ -17,6 +17,7 @@ export function Sidebar() {
     { path: '/comparador-guias', label: 'Comparador de Guias', icon: FileSearch },
     { path: '/tabela-emolumentos', label: 'Tabela de Emolumentos', icon: FileSpreadsheet },
     { path: '/auditoria', label: 'Central de Auditoria', icon: ShieldCheck },
+    { path: '/normas', label: 'Normas Extrajudiciais', icon: FileSearch },
     { path: '/comunidade', label: 'Comunidade Suporte', icon: MessagesSquare },
   ];
   const handleCopy = (text: string, label: string) => {

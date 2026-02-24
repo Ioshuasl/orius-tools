@@ -87,6 +87,7 @@ export interface ApiResponseTabela {
 
 export interface InstrucaoCorrecao {
   linhaDoArquivo: number;
+  localizacao: string; // Adicionado para garantir a propagação correta no XML
   campo: string;
   novoValor: string;
 }
@@ -150,4 +151,40 @@ export interface ApiResponseCommunity {
   total?: number;
   data: CommunityPage | CommunityPage[];
   message?: string;
+}
+
+export interface Artigo {
+  numero: string;
+  texto: string;
+  paragrafos: { id: string; texto: string; incisos: any[] }[];
+  incisos: { id: string; texto: string; alineas: any[] }[];
+}
+
+export interface Capitulo {
+  id: string;
+  nome: string;
+  artigos: Artigo[];
+}
+
+export interface Titulo {
+  id: string;
+  nome: string;
+  capitulos?: Capitulo[];
+  artigos?: Artigo[];
+}
+
+export interface Livro {
+  id: string;
+  nome: string;
+  titulos: Titulo[];
+}
+
+export interface Parte {
+  nome: string;
+  livros?: Livro[];
+  titulos?: Titulo[];
+}
+
+export interface NormasData {
+  partes: Parte[];
 }

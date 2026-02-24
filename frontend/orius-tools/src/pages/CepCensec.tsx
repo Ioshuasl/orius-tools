@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect } from 'react';
 import {
   FileCode, Search, RefreshCcw, AlertCircle,
-  Activity, CheckCircle2, Code, List,
+  Activity, Code, List,
   ExternalLink, ShieldCheck, History, Download
 } from 'lucide-react';
 import { toast } from 'sonner';
@@ -21,43 +21,73 @@ export default function CepCensec() {
   const [loading, setLoading] = useState(false);
   const [dragActive, setDragActive] = useState(false);
   const [viewMode, setViewMode] = useState<'table' | 'code'>('table');
-  const [correcoesManuais, setCorrecoesManuais] = useState<Record<number, string>>({});
+  
+  /** * ESTADO DE CORREÇÕES:
+   * Chave: "linha_campo" (ex: "544_ReferenteCns") para suportar múltiplos erros na mesma linha.
+   */
+  const [correcoesManuais, setCorrecoesManuais] = useState<Record<string, string>>({});
   const [showHistoryModal, setShowHistoryModal] = useState(false);
+  const [historicoAcumulado, setHistoricoAcumulado] = useState<Record<string, any>>({});
 
-  // Estado para armazenar todas as correções de todas as rodadas
-  const [historicoAcumulado, setHistoricoAcumulado] = useState<Record<number, { campo: string, valor: string, localizacao: string }>>({});
+  /**
+   * Identifica qual tag XML deve ser corrigida com base na mensagem do backend.
+   */
+  const getCampoAlvo = (msg: string) => {
+    const mensagem = msg.toLowerCase();
+    if (mensagem.includes("'referentetipoatocep'")) return 'ReferenteTipoAtoCep';
+    if (mensagem.includes("'referentecns'")) return 'ReferenteCns';
+    if (mensagem.includes("'referentelivro'")) return 'ReferenteLivro';
+    if (mensagem.includes("'referentefolha'")) return 'ReferenteFolha';
+    if (mensagem.includes("'naturezaescritura'")) return 'NaturezaEscritura';
+    if (mensagem.includes('qualidade')) return 'ParteQualidade';
+    if (mensagem.includes('documento')) return 'ParteTipoDocumento';
+    if (mensagem.includes('regime')) return 'RegimeBens';
+    if (mensagem.includes('cpf')) return 'ParteNumeroDocumento';
+    if (mensagem.includes('usucapiao')) return 'NaturezaAtaNotarialDeUsucapiao';
+    return 'RegimeBens';
+  };
 
-  // Recupera histórico salvo se houver um refresh na página
-  useEffect(() => {
-    const salvo = localStorage.getItem('orius_cep_history');
-    if (salvo) {
-      setHistoricoAcumulado(JSON.parse(salvo));
-    }
-  }, []);
+  /**
+   * REPLICAÇÃO INTELIGENTE (Smart Sync):
+   * Se preencher um campo de ato (como CNS), replica para o mesmo campo em todos os 
+   * blocos do mesmo Livro/Folha.
+   */
+  const handleSyncCorrecao = (linha: number, valor: string, localizacao: string, mensagem: string) => {
+    const campoAtual = getCampoAlvo(mensagem);
+    const chaveAtual = `${linha}_${campoAtual}`;
+
+    setCorrecoesManuais(prev => {
+      const novas = { ...prev, [chaveAtual]: valor };
+      
+      // Replica se for o mesmo campo na mesma localização (mesmo ato)
+      result?.erros.forEach(erro => {
+        const campoErro = getCampoAlvo(erro.mensagemDeErro);
+        const chaveErro = `${erro.linhaDoArquivo}_${campoErro}`;
+        
+        if (erro.localizacao === localizacao && campoErro === campoAtual && chaveErro !== chaveAtual) {
+          novas[chaveErro] = valor;
+        }
+      });
+      return novas;
+    });
+  };
 
   const todosErrosRespondidos = result ?
-    result.erros.every(erro => correcoesManuais[erro.linhaDoArquivo] && correcoesManuais[erro.linhaDoArquivo].trim() !== "")
-    : false;
+    result.erros.every(erro => {
+      const chave = `${erro.linhaDoArquivo}_${getCampoAlvo(erro.mensagemDeErro)}`;
+      return correcoesManuais[chave] && correcoesManuais[chave].trim() !== "";
+    }) : false;
 
   const processFile = (selectedFile: File) => {
-    if (!selectedFile.name.endsWith('.xml')) {
-      return toast.error("Por favor, selecione um ficheiro XML válido.");
-    }
-
+    if (!selectedFile.name.endsWith('.xml')) return toast.error("Selecione um XML válido.");
     const reader = new FileReader();
     reader.onload = (e) => {
       const content = e.target?.result as string;
-      const formattedContent = formatXML(content);
-
-      setXmlCode(formattedContent);
-      const blob = new Blob([formattedContent], { type: 'text/xml' });
-      setFile(new File([blob], selectedFile.name, { type: 'text/xml' }));
+      const formatted = formatXML(content);
+      setXmlCode(formatted);
+      setFile(new File([new Blob([formatted], { type: 'text/xml' })], selectedFile.name));
       setResult(null);
       setCorrecoesManuais({});
-
-      // Limpa histórico ao iniciar um novo arquivo
-      localStorage.removeItem('orius_cep_history');
-      setHistoricoAcumulado({});
     };
     reader.readAsText(selectedFile);
   };
@@ -68,7 +98,7 @@ export default function CepCensec() {
     try {
       const data = await validarCepService(file);
       setResult(data);
-      data.success ? toast.success("XML 100% válido!") : toast.warning(`${data.erros.length} inconsistências encontradas.`);
+      data.success ? toast.success("XML válido!") : toast.warning(`${data.erros.length} inconsistências.`);
     } catch (err) {
       toast.error("Erro na validação.");
     } finally { setLoading(false); }
@@ -77,89 +107,44 @@ export default function CepCensec() {
   const handleExportarOuRevalidar = async () => {
     if (!file || !result) return;
 
-    // 1. Mapeia as correções desta rodada
+    // Constrói instruções com campo e localização.
     const instrucoes: InstrucaoCorrecao[] = result.erros
-      .filter(erro => correcoesManuais[erro.linhaDoArquivo])
-      .map(erro => ({
-        linhaDoArquivo: erro.linhaDoArquivo,
-        campo: erro.mensagemDeErro.toLowerCase().includes('qualidade') ? 'ParteQualidade' :
-          erro.mensagemDeErro.toLowerCase().includes('documento') ? 'ParteTipoDocumento' : 'RegimeBens',
-        novoValor: correcoesManuais[erro.linhaDoArquivo]
-      }));
-
-    // 2. Alimenta o histórico acumulado antes de processar
-    const novoHistorico = { ...historicoAcumulado };
-    result.erros.forEach(erro => {
-      if (correcoesManuais[erro.linhaDoArquivo]) {
-        novoHistorico[erro.linhaDoArquivo] = {
-          campo: erro.mensagemDeErro.toLowerCase().includes('qualidade') ? 'ParteQualidade' :
-            erro.mensagemDeErro.toLowerCase().includes('documento') ? 'ParteTipoDocumento' : 'RegimeBens',
-          valor: correcoesManuais[erro.linhaDoArquivo],
-          localizacao: erro.localizacao
+      .map(erro => {
+        const campo = getCampoAlvo(erro.mensagemDeErro);
+        const valor = correcoesManuais[`${erro.linhaDoArquivo}_${campo}`];
+        if (!valor) return null;
+        return { 
+          linhaDoArquivo: erro.linhaDoArquivo, 
+          localizacao: erro.localizacao, 
+          campo, 
+          novoValor: valor 
         };
-      }
-    });
-
-    setHistoricoAcumulado(novoHistorico);
-    localStorage.setItem('orius_cep_history', JSON.stringify(novoHistorico));
+      })
+      .filter((i): i is InstrucaoCorrecao => i !== null);
 
     setLoading(true);
     try {
       const response = await corrigirCepService(file, instrucoes);
 
       if (response.valid || response.errorCount === 0) {
-        // Fluxo de Sucesso Final
         const url = window.URL.createObjectURL(response.data);
         const a = document.createElement('a');
-        a.style.display = 'none';
         a.href = url;
         a.download = `CORRIGIDO_${file.name}`;
-        document.body.appendChild(a);
         a.click();
-
-        setTimeout(() => {
-          window.URL.revokeObjectURL(url);
-          document.body.removeChild(a);
-        }, 100);
-
-        toast.success("XML 100% Corrigido!");
-
-        // Limpa o armazenamento temporário após download bem sucedido
-        localStorage.removeItem('orius_cep_history');
-
-        setResult({
-          success: true,
-          total_atos_agrupados: result.total_atos_agrupados,
-          total_erros: 0,
-          erros: []
-        });
+        toast.success("XML exportado com sucesso!");
+        setResult({ success: true, total_atos_agrupados: result.total_atos_agrupados, total_erros: 0, erros: [] });
       } else {
-        // Fluxo de Re-validação
-        toast.error(`Restam ${response.errorCount} erros.`);
+        toast.warning(`Restam ${response.errorCount} ajustes.`);
         const novoArquivo = new File([response.data], file.name, { type: 'text/xml' });
         setFile(novoArquivo);
-
-        const reader = new FileReader();
-        reader.onload = (e) => setXmlCode(e.target?.result as string);
-        reader.readAsText(novoArquivo);
-
         const data = await validarCepService(novoArquivo);
         setResult(data);
-        setCorrecoesManuais({});
+        setCorrecoesManuais({}); 
       }
     } catch (err) {
-      toast.error("Erro ao processar correções.");
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  // Funções de manipulação do Monaco e Interface permanecem iguais...
-  const handleCodeChange = (v: string | undefined) => {
-    if (v) {
-      setXmlCode(v);
-      setFile(new File([new Blob([v], { type: 'text/xml' })], file?.name || "doc.xml", { type: 'text/xml' }));
-    }
+      toast.error("Erro ao aplicar correções.");
+    } finally { setLoading(false); }
   };
 
   const handleGoToLine = (linha: number) => {
@@ -173,47 +158,25 @@ export default function CepCensec() {
     }, 150);
   };
 
-  useEffect(() => {
-    const pathAtual = window.location.pathname;
-    const salvos = localStorage.getItem('orius_recent_modules');
-    let lista: string[] = salvos ? JSON.parse(salvos) : [];
-
-    // Remove se já existir (para evitar duplicatas) e adiciona no início
-    lista = [pathAtual, ...lista.filter(p => p !== pathAtual)].slice(0, 5); // Mantém os 5 últimos
-
-    localStorage.setItem('orius_recent_modules', JSON.stringify(lista));
-  }, []);
-
   if (result) {
     return (
       <div className="pb-20 animate-in fade-in duration-500">
-        <div className="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 sticky top-0 z-20 shadow-sm px-6 py-4 flex items-center justify-between transition-colors text-gray-900 dark:text-white">
+        <div className="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 sticky top-0 z-20 shadow-sm px-6 py-4 flex items-center justify-between transition-colors">
           <div className="flex bg-gray-100 dark:bg-gray-900 p-1 rounded-xl">
             <button onClick={() => setViewMode('table')} className={`px-4 py-1.5 rounded-lg text-xs font-bold transition-all ${viewMode === 'table' ? 'bg-white dark:bg-gray-700 shadow-sm text-orange-600' : 'text-gray-500'}`}><List size={14} className="inline mr-1" /> Auditoria</button>
             <button onClick={() => setViewMode('code')} className={`px-4 py-1.5 rounded-lg text-xs font-bold transition-all ${viewMode === 'code' ? 'bg-white dark:bg-gray-700 shadow-sm text-orange-600' : 'text-gray-500'}`}><Code size={14} className="inline mr-1" /> Código</button>
           </div>
           <div className="flex gap-2">
-            <button onClick={() => { setResult(null); setFile(null); localStorage.removeItem('orius_cep_history'); }} className="px-3 py-1.5 text-xs font-bold bg-gray-100 dark:bg-gray-700 rounded-lg hover:bg-gray-200 transition-colors">Voltar</button>
-
+            <button onClick={() => { setResult(null); setFile(null); }} className="px-3 py-1.5 text-xs font-bold bg-gray-100 dark:bg-gray-700 rounded-lg hover:bg-gray-200 transition-colors">Voltar</button>
             {!result.success && (
-              <>
-                <button
-                  onClick={() => setShowHistoryModal(true)}
-                  className="px-3 py-1.5 text-xs font-bold bg-gray-100 dark:bg-gray-700 rounded-lg hover:bg-gray-200 text-gray-600 dark:text-gray-300 transition-colors flex items-center gap-2"
-                >
-                  <History size={14} /> Histórico
-                </button>
-
-                <button
-                  onClick={handleExportarOuRevalidar}
-                  disabled={loading || !todosErrosRespondidos}
-                  className={`px-4 py-1.5 text-xs font-bold rounded-lg shadow-md flex items-center gap-2 transition-all ${!todosErrosRespondidos ? 'bg-gray-300 cursor-not-allowed text-gray-500' : 'bg-orange-500 text-white hover:bg-orange-600'
-                    }`}
-                >
-                  {loading ? <RefreshCcw className="animate-spin" size={14} /> : <Download size={14} />}
-                  {todosErrosRespondidos ? 'Exportar XML' : 'Corrija para Exportar'}
-                </button>
-              </>
+              <button
+                onClick={handleExportarOuRevalidar}
+                disabled={loading || !todosErrosRespondidos}
+                className={`px-4 py-1.5 text-xs font-bold rounded-lg shadow-md flex items-center gap-2 transition-all ${!todosErrosRespondidos ? 'bg-gray-300 cursor-not-allowed text-gray-500' : 'bg-orange-500 text-white hover:bg-orange-600'}`}
+              >
+                {loading ? <RefreshCcw className="animate-spin" size={14} /> : <Download size={14} />}
+                {todosErrosRespondidos ? 'Exportar XML' : 'Preencha para Exportar'}
+              </button>
             )}
           </div>
         </div>
@@ -221,66 +184,15 @@ export default function CepCensec() {
         <div className="p-6 max-w-7xl mx-auto space-y-6">
           <section className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <StatsCard title="Atos" value={result.total_atos_agrupados} icon={Search} />
-            <StatsCard title="Erros Pendentes" value={result.total_erros} icon={AlertCircle} variant={result.success ? 'default' : 'danger'} />
-            <StatsCard title="Histórico" value={Object.keys(historicoAcumulado).length} icon={History} />
+            <StatsCard title="Erros" value={result.total_erros} icon={AlertCircle} variant={result.success ? 'default' : 'danger'} />
+            <StatsCard title="Status" value={result.success ? "Válido" : "Inconsistente"} icon={ShieldCheck} />
           </section>
 
           {result.success ? (
-            <div className="space-y-6 animate-in zoom-in-95 duration-500">
-              {/* Card de Sucesso Principal */}
-              <div className="bg-white dark:bg-gray-800 p-10 rounded-3xl border-2 border-dashed border-green-200 dark:border-green-900/30 flex flex-col items-center justify-center text-center shadow-sm">
-                <div className="w-16 h-16 bg-green-100 dark:bg-green-500/10 text-green-600 rounded-full flex items-center justify-center mb-4">
-                  <ShieldCheck size={32} />
-                </div>
-                <h2 className="text-2xl font-black text-gray-900 dark:text-white">Processo Concluído!</h2>
-                <p className="text-gray-500 max-w-sm mt-2 text-sm font-medium">
-                  O arquivo foi validado, corrigido e o download foi realizado com sucesso.
-                </p>
-
-                <button
-                  onClick={() => { setResult(null); setFile(null); }}
-                  className="mt-6 px-8 py-3 bg-gray-900 dark:bg-white dark:text-gray-900 text-white rounded-xl font-bold text-xs transition-transform active:scale-95 shadow-lg"
-                >
-                  Validar Novo Arquivo
-                </button>
-              </div>
-
-              {/* Seção de Histórico Completo na Tela Final */}
-              {Object.keys(historicoAcumulado).length > 0 && (
-                <div className="bg-white dark:bg-gray-800 rounded-3xl border border-gray-100 dark:border-gray-700 overflow-hidden shadow-sm">
-                  <div className="px-6 py-4 border-b border-gray-50 dark:border-gray-700 bg-gray-50/50 dark:bg-gray-900/50 flex items-center gap-2">
-                    <History size={16} className="text-orange-500" />
-                    <h3 className="text-sm font-black text-gray-900 dark:text-white uppercase tracking-wider">Log de Alterações Realizadas</h3>
-                  </div>
-                  <div className="p-0">
-                    <table className="w-full text-left">
-                      <thead className="bg-gray-50/30 dark:bg-gray-900/30 text-[10px] uppercase text-gray-400 font-black border-b border-gray-100 dark:border-gray-700">
-                        <tr>
-                          <th className="px-6 py-3">Linha</th>
-                          <th className="px-6 py-3">Campo Corrigido</th>
-                          <th className="px-6 py-3 text-right">Novo Valor Aplicado</th>
-                        </tr>
-                      </thead>
-                      <tbody className="divide-y divide-gray-50 dark:divide-gray-700">
-                        {Object.entries(historicoAcumulado).map(([linha, dados], i) => (
-                          <tr key={i} className="text-xs hover:bg-gray-50/30 dark:hover:bg-gray-700/10 transition-colors">
-                            <td className="px-6 py-4 font-mono font-bold text-orange-500">{linha}</td>
-                            <td className="px-6 py-4">
-                              <div className="font-bold text-gray-800 dark:text-gray-200">{dados.campo}</div>
-                              <div className="text-[10px] text-gray-400">{dados.localizacao}</div>
-                            </td>
-                            <td className="px-6 py-4 text-right">
-                              <span className="inline-block px-2 py-1 bg-green-50 dark:bg-green-500/10 text-green-600 dark:text-green-400 rounded-md font-bold border border-green-100 dark:border-green-900/30">
-                                {dados.valor}
-                              </span>
-                            </td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                  </div>
-                </div>
-              )}
+            <div className="bg-white dark:bg-gray-800 p-10 rounded-3xl border-2 border-dashed border-green-200 flex flex-col items-center text-center shadow-sm">
+              <div className="w-16 h-16 bg-green-100 text-green-600 rounded-full flex items-center justify-center mb-4"><ShieldCheck size={32} /></div>
+              <h2 className="text-2xl font-black text-gray-900 dark:text-white">Concluído!</h2>
+              <button onClick={() => { setResult(null); setFile(null); }} className="mt-6 px-8 py-3 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-xl font-bold text-xs shadow-lg">Novo Arquivo</button>
             </div>
           ) : viewMode === 'table' ? (
             <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 overflow-hidden shadow-sm">
@@ -289,77 +201,75 @@ export default function CepCensec() {
                   <tr><th className="px-6 py-3">Localização</th><th className="px-6 py-3">Inconsistência</th><th className="px-6 py-3">Correção</th></tr>
                 </thead>
                 <tbody className="divide-y divide-gray-100 dark:divide-gray-700">
-                  {result.erros.map((erro, idx) => (
-                    <tr key={idx} className="hover:bg-gray-50/30 dark:hover:bg-gray-700/10 transition-colors">
-                      <td className="px-6 py-4">
-                        <button onClick={() => handleGoToLine(erro.linhaDoArquivo)} className="text-[9px] font-black text-orange-500 flex items-center gap-1 mb-1 tracking-tighter hover:underline">LINHA {erro.linhaDoArquivo} <ExternalLink size={10} /></button>
-                        <div className="font-bold text-gray-900 dark:text-white text-sm leading-tight">{erro.localizacao}</div>
-                        <div className="text-[11px] text-gray-500 truncate max-w-[200px]">{erro.nomeDaParte || 'Ato'}</div>
-                      </td>
-                      <td className="px-6 py-4">
-                        <div className="text-xs text-red-600 dark:text-red-400 font-bold leading-tight">{erro.mensagemDeErro}</div>
-                        <div className="text-[9px] text-gray-400 mt-1 uppercase font-bold tracking-widest">{erro.tipoAto}</div>
-                      </td>
-                      <td className="px-6 py-4">
-                        {erro.opcoesAceitas ? (
-                          <select
-                            className="w-full bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg p-2 text-xs font-bold outline-none focus:border-orange-500 text-gray-900 dark:text-white"
-                            value={correcoesManuais[erro.linhaDoArquivo] || ''}
-                            onChange={(e) => setCorrecoesManuais(prev => ({ ...prev, [erro.linhaDoArquivo]: e.target.value }))}
-                          >
-                            <option value="">Selecione...</option>
-                            {erro.opcoesAceitas.map(opt => <option key={opt} value={opt}>{opt}</option>)}
-                          </select>
-                        ) : (
-                          <input
-                            type="text"
-                            placeholder="Valor manual..."
-                            className="w-full bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg p-2 text-xs font-bold outline-none focus:border-orange-500 text-gray-900 dark:text-white"
-                            value={correcoesManuais[erro.linhaDoArquivo] || ''}
-                            onChange={(e) => setCorrecoesManuais(prev => ({ ...prev, [erro.linhaDoArquivo]: e.target.value }))}
-                          />
-                        )}
-                      </td>
-                    </tr>
-                  ))}
+                  {result.erros.map((erro, idx) => {
+                    const campo = getCampoAlvo(erro.mensagemDeErro);
+                    const chave = `${erro.linhaDoArquivo}_${campo}`;
+
+                    return (
+                      <tr key={idx} className="hover:bg-gray-50/30 dark:hover:bg-gray-700/10 transition-colors">
+                        <td className="px-6 py-4">
+                          <button onClick={() => handleGoToLine(erro.linhaDoArquivo)} className="text-[9px] font-black text-orange-500 flex items-center gap-1 mb-1 tracking-tighter hover:underline">LINHA {erro.linhaDoArquivo} <ExternalLink size={10} /></button>
+                          <div className="font-bold text-gray-900 dark:text-white text-sm leading-tight">{erro.localizacao}</div>
+                          <div className="text-[11px] text-gray-400 truncate max-w-[180px]">{erro.nomeDaParte || 'Ato Notarial'}</div>
+                        </td>
+                        <td className="px-6 py-4">
+                          <div className="text-xs text-red-600 dark:text-red-400 font-bold leading-tight">{erro.mensagemDeErro}</div>
+                          <div className="text-[9px] text-gray-400 mt-1 uppercase font-bold tracking-widest">{erro.tipoAto}</div>
+                        </td>
+                        <td className="px-6 py-4">
+                          {erro.opcoesAceitas ? (
+                            <select
+                              className="w-full bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg p-2 text-xs font-bold text-gray-900 dark:text-white outline-none focus:border-orange-500"
+                              value={correcoesManuais[chave] || ''}
+                              onChange={(e) => handleSyncCorrecao(erro.linhaDoArquivo, e.target.value, erro.localizacao, erro.mensagemDeErro)}
+                            >
+                              <option value="">Selecione...</option>
+                              {erro.opcoesAceitas.map((opt: any) => (
+                                <option key={opt.id || opt} value={opt.id || opt}>{opt.label || opt}</option>
+                              ))}
+                            </select>
+                          ) : (
+                            <input
+                              type="text"
+                              placeholder="Valor..."
+                              className="w-full bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg p-2 text-xs font-bold text-gray-900 dark:text-white outline-none focus:border-orange-500"
+                              value={correcoesManuais[chave] || ''}
+                              onChange={(e) => handleSyncCorrecao(erro.linhaDoArquivo, e.target.value, erro.localizacao, erro.mensagemDeErro)}
+                            />
+                          )}
+                        </td>
+                      </tr>
+                    );
+                  })}
                 </tbody>
               </table>
             </div>
           ) : (
             <div className="h-[calc(100vh-250px)] rounded-[2rem] overflow-hidden border-4 border-gray-100 dark:border-gray-800 shadow-2xl">
-              <Editor height="100%" defaultLanguage="xml" theme="vs-dark" value={xmlCode} onMount={(e) => (editorRef.current = e)} onChange={handleCodeChange} options={{ fontSize: 16, fontWeight: 'bold', automaticLayout: true, wordWrap: 'on' }} />
+              <Editor height="100%" defaultLanguage="xml" theme="vs-dark" value={xmlCode} onMount={(e) => (editorRef.current = e)} options={{ fontSize: 16, fontWeight: 'bold', automaticLayout: true }} />
             </div>
           )}
         </div>
-
-        <HistoryModal
-          isOpen={showHistoryModal}
-          onClose={() => setShowHistoryModal(false)}
-          historico={historicoAcumulado} // Passa o histórico do localStorage
-        />
       </div>
     );
   }
 
   return (
-    <div className="h-full flex flex-col items-center justify-center p-6 min-h-[calc(100vh-4rem)] bg-gray-50/30 dark:bg-transparent transition-colors text-gray-900 dark:text-white">
+    <div className="h-full flex flex-col items-center justify-center p-6 min-h-[calc(100vh-4rem)]">
       <div className="max-w-xl w-full space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-700">
         <div className="text-center space-y-2">
-          <div className="inline-flex p-3 rounded-2xl bg-orange-500/10 text-orange-600 dark:text-orange-400 mb-2">
-            <ShieldCheck size={32} strokeWidth={2.5} />
-          </div>
-          <h1 className="text-3xl font-black tracking-tight leading-tight">Validador <span className="text-orange-500">CENSEC</span></h1>
-          <p className="text-sm text-gray-500 dark:text-gray-400 font-medium px-8 leading-relaxed">Auditoria técnica instantânea de arquivos XML para a CEP conforme o manual oficial.</p>
+          <div className="inline-flex p-3 rounded-2xl bg-orange-500/10 text-orange-600 mb-2"><ShieldCheck size={32} /></div>
+          <h1 className="text-3xl font-black">Validador <span className="text-orange-500">CENSEC</span></h1>
+          <p className="text-sm text-gray-500 font-medium px-8">Auditoria técnica instantânea de arquivos XML para a CEP.</p>
         </div>
 
         <div className="bg-white dark:bg-gray-800 rounded-3xl shadow-sm border border-gray-200 dark:border-gray-700 p-6 space-y-4">
-          <div onDragEnter={(e) => { e.preventDefault(); setDragActive(true); }} onDragLeave={() => setDragActive(false)} onDragOver={(e) => e.preventDefault()} onDrop={(e) => { e.preventDefault(); setDragActive(false); e.dataTransfer.files[0] && processFile(e.dataTransfer.files[0]); }} className={`relative flex flex-col items-center justify-center py-10 px-4 border-2 border-dashed rounded-2xl transition-all group ${dragActive ? 'border-orange-500 bg-orange-50/50 dark:bg-orange-500/5' : 'border-gray-300 dark:border-gray-600 hover:border-orange-400/50'}`}>
+          <div onDragEnter={(e) => { e.preventDefault(); setDragActive(true); }} onDragLeave={() => setDragActive(false)} onDragOver={(e) => e.preventDefault()} onDrop={(e) => { e.preventDefault(); setDragActive(false); e.dataTransfer.files[0] && processFile(e.dataTransfer.files[0]); }} className={`relative flex flex-col items-center justify-center py-10 px-4 border-2 border-dashed rounded-2xl transition-all group ${dragActive ? 'border-orange-500 bg-orange-50/50' : 'border-gray-300 dark:border-gray-600 hover:border-orange-400'}`}>
             <input type="file" accept=".xml" className="absolute inset-0 w-full h-full opacity-0 cursor-pointer" onChange={(e) => e.target.files && processFile(e.target.files[0])} />
-            <div className={`p-4 rounded-full mb-4 shadow-sm transition-all ${file ? 'bg-orange-500 text-white' : 'bg-gray-50 dark:bg-gray-900 text-gray-400 group-hover:text-orange-400'}`}><FileCode size={32} strokeWidth={2.5} /></div>
-            <h3 className="text-base font-bold tracking-tight">{file ? file.name : 'Selecionar Arquivo XML'}</h3>
-            <p className="text-xs text-gray-400 font-medium mt-1">{file ? 'Pronto para validar' : 'Arraste o arquivo do sistema aqui'}</p>
+            <div className={`p-4 rounded-full mb-4 shadow-sm transition-all ${file ? 'bg-orange-500 text-white' : 'bg-gray-50 dark:bg-gray-900 text-gray-400'}`}><FileCode size={32} /></div>
+            <h3 className="text-base font-bold">{file ? file.name : 'Selecionar Arquivo XML'}</h3>
           </div>
-          <button onClick={handleValidate} disabled={loading || !file} className={`w-full py-4 rounded-2xl font-black text-sm tracking-widest uppercase transition-all flex items-center justify-center gap-2 ${loading ? 'bg-gray-100 dark:bg-gray-700 text-gray-400 cursor-wait' : !file ? 'bg-gray-50 dark:bg-gray-700 text-gray-300 cursor-not-allowed' : 'bg-orange-500 hover:bg-orange-600 text-white shadow-lg shadow-orange-500/20 active:scale-[0.98]'}`}>
+          <button onClick={handleValidate} disabled={loading || !file} className="w-full py-4 rounded-2xl font-black text-sm uppercase transition-all flex items-center justify-center gap-2 bg-orange-500 hover:bg-orange-600 text-white shadow-lg disabled:opacity-50">
             {loading ? <Activity className="animate-spin" size={18} /> : <Search size={18} />}
             {loading ? 'Processando...' : 'Iniciar Auditoria'}
           </button>

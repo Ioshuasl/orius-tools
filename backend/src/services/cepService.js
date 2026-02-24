@@ -1,25 +1,7 @@
 import fs from 'fs';
 import { DOMParser, XMLSerializer } from 'xmldom';
+import * as HELPER from '../utils/cepHelper.js';
 import * as CONSTANTES from '../utils/cepConstants.js';
-
-/**
- * Helper: Validação Matemática de CPF
- */
-const isCpfValido = (cpf) => {
-    if (!cpf) return false;
-    cpf = cpf.replace(/[^\d]+/g, '');
-    if (cpf.length !== 11 || /^(\d)\1{10}$/.test(cpf)) return false;
-    let soma = 0, resto;
-    for (let i = 1; i <= 9; i++) soma += parseInt(cpf.substring(i - 1, i)) * (11 - i);
-    resto = (soma * 10) % 11;
-    if (resto === 10 || resto === 11) resto = 0;
-    if (resto !== parseInt(cpf.substring(9, 10))) return false;
-    soma = 0;
-    for (let i = 1; i <= 10; i++) soma += parseInt(cpf.substring(i - 1, i)) * (12 - i);
-    resto = (soma * 10) % 11;
-    if (resto === 10 || resto === 11) resto = 0;
-    return resto === parseInt(cpf.substring(10, 11));
-};
 
 /**
  * Helper: Captura texto de tags XML
@@ -36,21 +18,16 @@ export const validarXmlCep = async (filePath) => {
     const erros = [];
     const atosAgrupados = new Map();
 
-    /**
-     * Helper interno para padronizar o erro conforme types.ts
-     */
     const addErro = (linha, local, parte, msg, tipo, codAto = null, opcoes = undefined) => {
-        // Mapeia o código para nome amigável (Ex: '1' -> 'Escritura')
         const nomeAmigavelAto = codAto ? (CONSTANTES.TIPOS_ATO[codAto] || `Ato ${codAto}`) : "Ato CEP";
-        
         erros.push({
-            linhaDoArquivo: linha || '?',
+            linhaDoArquivo: linha,
             localizacao: local,
-            nomeDaParte: parte || null,
-            tipoAto: nomeAmigavelAto, // Interface genérica
+            nomeDaParte: parte,
+            tipoAto: nomeAmigavelAto,
             mensagemDeErro: msg,
             tipoDeErro: tipo,
-            opcoesAceitas: opcoes
+            opcoesAceitas: opcoes // Repassa o array de {id, label} ou strings
         });
     };
 
@@ -63,16 +40,13 @@ export const validarXmlCep = async (filePath) => {
         return { sucesso: false, totalAtos: 0, erros: [{ mensagemDeErro: "Nenhuma tag <AtoCep> encontrada." }] };
     }
 
-    // --- PASSO 1: AGRUPAMENTO (Consolidação por Unicidade) ---
+    // --- PASSO 1: AGRUPAMENTO E COLETA (Consolidação por Livro/Folha) ---
     for (let i = 0; i < atosNodeList.length; i++) {
         const node = atosNodeList[i];
         const linha = node.lineNumber;
-        
         const livro = getNodeText(node, "Livro") || "";
-        const livroComp = getNodeText(node, "LivroComplemento") || "";
         const folha = getNodeText(node, "Folha") || "";
-        const folhaComp = getNodeText(node, "FolhaComplemento") || "";
-        const chave = `${livro}-${livroComp}-${folha}-${folhaComp}`; // Chave de unicidade
+        const chave = `${livro}-${folha}`;
 
         if (!atosAgrupados.has(chave)) {
             atosAgrupados.set(chave, {
@@ -80,99 +54,65 @@ export const validarXmlCep = async (filePath) => {
                 tipoAtoCep: getNodeText(node, "TipoAtoCep"),
                 naturezaEscritura: getNodeText(node, "NaturezaEscritura"),
                 naturezaAtaNotarialDeUsucapiao: getNodeText(node, "NaturezaAtaNotarialDeUsucapiao"),
-                mne: getNodeText(node, "Mne"),
-                data: getNodeText(node, "DataAto"),
-                livro, livroComp, folha, folhaComp,
-                valor: getNodeText(node, "Valor"),
-                regimeBens: getNodeText(node, "RegimeBens"),
                 naturezaLitigio: getNodeText(node, "NaturezaLitigio"),
                 acordo: getNodeText(node, "Acordo"),
-                partes: [],
-                referentes: []
+                livro, folha,
+                temReferenteTipo: !!getNodeText(node, "ReferenteTipoAtoCep"),
+                temReferenteCns: !!getNodeText(node, "ReferenteCns"),
+                temReferenteLivro: !!getNodeText(node, "ReferenteLivro"),
+                temReferenteFolha: !!getNodeText(node, "ReferenteFolha"),
+                partes: []
             });
         }
 
         const ato = atosAgrupados.get(chave);
-        
-        // Coleta de Partes
-        const pNome = getNodeText(node, "ParteNome");
-        if (pNome) {
-            ato.partes.push({
-                linha,
-                nome: pNome,
-                tipoDoc: getNodeText(node, "ParteTipoDocumento"),
-                numDoc: getNodeText(node, "ParteNumeroDocumento"),
-                qualidade: getNodeText(node, "ParteQualidade")
-            });
-        }
-
-        // Coleta de Referentes
-        const refCns = getNodeText(node, "ReferenteCns");
-        if (refCns || getNodeText(node, "ReferenteTipoAtoCep")) {
-            ato.referentes.push({
-                linha,
-                cns: refCns,
-                livro: getNodeText(node, "ReferenteLivro")
-            });
-        }
+        ato.partes.push({
+            linha,
+            nome: getNodeText(node, "ParteNome"),
+            tipoDocumento: getNodeText(node, "ParteTipoDocumento"),
+            numeroDocumento: getNodeText(node, "ParteNumeroDocumento"),
+            qualidade: getNodeText(node, "ParteQualidade")
+        });
     }
 
-    // --- PASSO 2: VALIDAÇÃO DAS REGRAS (CEP.MD) ---
+    // --- PASSO 2: VALIDAÇÃO USANDO OS AUXILIARES DO CEP_HELPER ---
     atosAgrupados.forEach((ato) => {
         const loc = `Livro ${ato.livro} Folha ${ato.folha}`;
-        const codAto = ato.tipoAtoCep;
 
-        // 2.1. Validação de Cabeçalho e Domínios
-        if (!codAto) {
-            addErro(ato.linhaBase, loc, null, "tipoAtoCep é obrigatório.", "Obrigatoriedade", null, Object.keys(CONSTANTES.TIPOS_ATO));
-        } else if (!CONSTANTES.TIPOS_ATO[codAto]) {
-            addErro(ato.linhaBase, loc, null, `Código de ato '${codAto}' inválido.`, "Domínio", null, Object.keys(CONSTANTES.TIPOS_ATO));
+        // 2.1. Natureza da Escritura (Obrigatória se Tipo 1)
+        const erroNat = HELPER.validarNaturezaObrigatoria(ato);
+        if (erroNat) addErro(ato.linhaBase, loc, null, erroNat.mensagem, "Obrigatoriedade", ato.tipoAtoCep, erroNat.opcoes);
+
+        // 2.2. Referentes (Revogação, Renúncia, Substabelecimento e Natureza 35)
+        const errosRef = HELPER.validarReferentesObrigatoriedade(ato);
+        if (errosRef) {
+            errosRef.forEach(e => addErro(ato.linhaBase, loc, "Grupo Referente", e.msg, "Obrigatoriedade", ato.tipoAtoCep, e.opcoes));
         }
 
-        // Condicional: Escritura (Tipo 1) exige Natureza
-        if (codAto === '1' && !ato.naturezaEscritura) {
-            addErro(ato.linhaBase, loc, null, "naturezaEscritura é obrigatória para Escrituras.", "Obrigatoriedade", codAto, Object.keys(CONSTANTES.NATUREZAS_ESCRITURA));
+        // 2.3. Ata de Usucapião
+        const erroUsu = HELPER.validarUsucapiao(ato);
+        if (erroUsu) addErro(ato.linhaBase, loc, null, erroUsu.mensagem, "Obrigatoriedade", ato.tipoAtoCep, erroUsu.opcoes);
+
+        // 2.4. Mediação e Conciliação
+        const errosMed = HELPER.validarMediacaoConciliacao(ato);
+        if (errosMed) {
+            errosMed.forEach(e => addErro(ato.linhaBase, loc, null, e.msg, "Obrigatoriedade", ato.tipoAtoCep, e.opcoes));
         }
 
-        // Condicional: Usucapião (Tipo 9)
-        if (codAto === '9' && !ato.naturezaAtaNotarialDeUsucapiao) {
-            addErro(ato.linhaBase, loc, null, "naturezaAtaNotarialDeUsucapiao é obrigatória.", "Obrigatoriedade", codAto, Object.keys(CONSTANTES.NATUREZAS_USUCAPIAO));
-        }
-
-        // Condicional: Mediação/Conciliação (Naturezas 75/76)
-        if (ato.naturezaEscritura === '75' || ato.naturezaEscritura === '76') {
-            if (!ato.naturezaLitigio) addErro(ato.linhaBase, loc, null, "naturezaLitigio é obrigatória.", "Obrigatoriedade", codAto, Object.keys(CONSTANTES.NATUREZAS_LITIGIO));
-            if (!ato.acordo) addErro(ato.linhaBase, loc, null, "acordo (SIM/NÃO) é obrigatório.", "Obrigatoriedade", codAto, ["SIM", "NÃO"]);
-        }
-
-        // 2.2. Validação de Referentes (Atos de Revogação/Rerratificação)
-        const exigeRef = ['5', '6', '7'].includes(codAto) || (codAto === '1' && ato.naturezaEscritura === '35');
-        if (exigeRef && ato.referentes.length === 0) {
-            addErro(ato.linhaBase, loc, null, "Este ato exige o grupo de Referentes (ato antecessor).", "Regra de Negócio", codAto);
-        }
-
-        // 2.3. Validação de Partes
-        if (ato.partes.length === 0) {
-            addErro(ato.linhaBase, loc, null, "Pelo menos uma parte é obrigatória.", "Obrigatoriedade", codAto);
-        } else {
-            ato.partes.forEach(p => {
-                if (p.tipoDoc?.toUpperCase() === 'CPF' && !isCpfValido(p.numDoc)) {
-                    addErro(p.linha, loc, p.nome, `CPF (${p.numDoc}) é inválido.`, "Validação Matemática", codAto);
-                }
-                
-                const qualValida = CONSTANTES.QUALIDADES_PARTE.includes(p.qualidade?.toUpperCase());
-                if (p.qualidade && !qualValida) {
-                    addErro(p.linha, loc, p.nome, `Qualidade '${p.qualidade}' inválida.`, "Domínio", codAto, CONSTANTES.QUALIDADES_PARTE);
-                }
-            });
-        }
+        // 2.5. Dados das Partes (Validação individual por linha)
+        ato.partes.forEach(p => {
+            const errosP = HELPER.validarDadosParte(p);
+            if (errosP) {
+                errosP.forEach(e => addErro(p.linha, loc, p.nome, e.msg, "Validação", ato.tipoAtoCep, e.opcoes));
+            }
+        });
     });
 
     return { totalAtos: atosAgrupados.size, erros, sucesso: erros.length === 0 };
 };
 
 /**
- * APLICAÇÃO DE CORREÇÕES (Otimizada com Map)
+ * APLICAÇÃO DE CORREÇÕES COM BUSCA POR LOCALIZAÇÃO E PROPAGAÇÃO
  */
 export const aplicarCorrecoesXml = async (filePath, correcoes) => {
     const xmlString = fs.readFileSync(filePath, 'utf-8');
@@ -180,22 +120,39 @@ export const aplicarCorrecoesXml = async (filePath, correcoes) => {
     const xmlDoc = parser.parseFromString(xmlString, "text/xml");
     const atosNodeList = xmlDoc.getElementsByTagName("AtoCep");
 
-    // Indexação O(1) por linha
-    const nodesByLine = new Map();
-    for (let i = 0; i < atosNodeList.length; i++) {
-        nodesByLine.set(atosNodeList[i].lineNumber, atosNodeList[i]);
-    }
+    // Tags que devem ser propagadas para todos os blocos do mesmo ato
+    const tagsDeCabecalhoAto = [
+        'TipoAtoCep', 'NaturezaEscritura', 'DataAto', 'Valor', 'RegimeBens',
+        'ReferenteTipoAtoCep', 'ReferenteCns', 'ReferenteLivro', 'ReferenteFolha',
+        'NaturezaAtaNotarialDeUsucapiao', 'NaturezaLitigio', 'Acordo'
+    ];
 
     correcoes.forEach(conserto => {
-        const node = nodesByLine.get(conserto.linhaDoArquivo);
-        if (node) {
-            let tag = node.getElementsByTagName(conserto.campo)[0];
-            if (tag) {
-                tag.textContent = conserto.novoValor;
-            } else {
-                const novaTag = xmlDoc.createElement(conserto.campo);
-                novaTag.textContent = conserto.novoValor;
-                node.appendChild(novaTag);
+        const match = conserto.localizacao.match(/Livro\s+(\d+)\s+Folha\s+(\d+)/);
+        if (!match) return;
+
+        const livroAlvo = match[1];
+        const folhaAlvo = match[2];
+
+        for (let i = 0; i < atosNodeList.length; i++) {
+            const node = atosNodeList[i];
+            const livroNode = getNodeText(node, "Livro");
+            const folhaNode = getNodeText(node, "Folha");
+
+            if (livroNode === livroAlvo && folhaNode === folhaAlvo) {
+                const ehTagDeAto = tagsDeCabecalhoAto.includes(conserto.campo);
+                const ehLinhaExata = node.lineNumber === conserto.linhaDoArquivo;
+
+                if (ehTagDeAto || ehLinhaExata) {
+                    let tag = node.getElementsByTagName(conserto.campo)[0];
+                    if (tag) {
+                        tag.textContent = conserto.novoValor;
+                    } else {
+                        const novaTag = xmlDoc.createElement(conserto.campo);
+                        novaTag.textContent = conserto.novoValor;
+                        node.appendChild(novaTag);
+                    }
+                }
             }
         }
     });
