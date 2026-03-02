@@ -6,14 +6,15 @@ import { validarJsonDoi, corrigirJsonDoi } from '../services/doiService.js';
  * Funções Auxiliares de Resposta
  */
 const responderValidacao = (res, result, filePath) => {
-    // Remove o arquivo enviado após o processamento para economizar espaço
     try { fs.unlinkSync(filePath); } catch (e) { }
     
     return res.json({
         success: result.sucesso,
         total_atos: result.totalAtos,
         total_erros: result.erros.length,
-        erros: result.erros
+        erros: result.erros,
+        foi_higienizado: result.foiHigienizado, // Informa o front
+        conteudo_limpo: result.conteudoLimpo   // Envia o dado para download
     });
 };
 

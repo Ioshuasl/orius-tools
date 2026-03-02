@@ -26,7 +26,7 @@ const storage = multer.diskStorage({
 // Filtro de segurança (Opcional, mas recomendado para escalabilidade)
 const fileFilter = (req, file, cb) => {
     // Lista de extensões permitidas para a Comunidade e Conversores
-    const allowedTypes = ['.pdf', '.xlsx', '.xls', '.csv', '.png', '.jpg', '.jpeg', '.mp4', '.mov','.xml'];
+    const allowedTypes = ['.pdf', '.xlsx', '.xls', '.csv', '.png', '.jpg', '.jpeg', '.mp4', '.mov','.xml','.json', '.rtf', '.zip', '.docx', '.doc', '.pptx', '.ppt', '.exe', '.dll', '.js', '.ts', '.html', '.css', '.ogg', '.wav', '.mp3', '.avi', '.mkv', '.flv', '.webm', '.svg', '.bmp', '.gif', '.tiff', '.ico', '.psd', '.ai', '.eps'];
     const ext = path.extname(file.originalname).toLowerCase();
     
     if (allowedTypes.includes(ext)) {

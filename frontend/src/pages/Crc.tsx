@@ -1,0 +1,266 @@
+import { useState, useRef, useEffect } from 'react';
+import {
+  FileCode, Search, RefreshCcw, AlertCircle,
+  Activity, Code, List,
+  ExternalLink, ShieldCheck, Download
+} from 'lucide-react';
+import { toast } from 'sonner';
+import Editor from '@monaco-editor/react';
+
+import { StatsCard } from '../components/StatsCard';
+import { validarCrcService, corrigirCrcService } from '../services/api';
+import type { CrcValidationResponse, InstrucaoCorrecao } from '../types';
+import { formatXML } from '../utils/xmlHelpers';
+
+export default function CrcValidator() {
+  const editorRef = useRef<any>(null);
+  const [file, setFile] = useState<File | null>(null);
+  const [xmlCode, setXmlCode] = useState<string>("");
+  const [result, setResult] = useState<CrcValidationResponse | null>(null);
+  const [loading, setLoading] = useState(false);
+  const [dragActive, setDragActive] = useState(false);
+  const [viewMode, setViewMode] = useState<'table' | 'code'>('table');
+
+  /** * ESTADO DE CORREÇÕES:
+   * Chave: "linha_campo" para suportar a lógica de correção por linha do CRC.
+   */
+  const [correcoesManuais, setCorrecoesManuais] = useState<Record<string, string>>({});
+
+  /**
+   * Identifica a tag XML alvo com base na mensagem de erro do XSD.
+   */
+  const getCampoAlvo = (msg: string) => {
+    const match = msg.match(/'([^']+)'/);
+    return match ? match[1] : 'MATRICULA';
+  };
+
+  /**
+   * REPLICAÇÃO INTELIGENTE:
+   * Sincroniza correções de campos globais (como CNS ou Ocupação) em registros do mesmo ato.
+   */
+  const handleSyncCorrecao = (linha: number, valor: string, matricula: string, mensagem: string) => {
+    const campoAtual = getCampoAlvo(mensagem);
+    const chaveAtual = `${linha}_${campoAtual}`;
+
+    setCorrecoesManuais(prev => {
+      const novas = { ...prev, [chaveAtual]: valor };
+
+      // Réplica automática para erros idênticos no mesmo registro (Matrícula)
+      result?.erros.forEach(erro => {
+        const campoErro = getCampoAlvo(erro.mensagemDeErro);
+        const chaveErro = `${erro.linhaDoArquivo}_${campoErro}`;
+
+        if (erro.localizacao.includes(matricula) && campoErro === campoAtual && chaveErro !== chaveAtual) {
+          novas[chaveErro] = valor;
+        }
+      });
+      return novas;
+    });
+  };
+
+  const todosErrosRespondidos = result ?
+    result.erros.every(erro => {
+      const chave = `${erro.linhaDoArquivo}_${getCampoAlvo(erro.mensagemDeErro)}`;
+      return correcoesManuais[chave] && correcoesManuais[chave].trim() !== "";
+    }) : false;
+
+  const processFile = (selectedFile: File) => {
+    if (!selectedFile.name.endsWith('.xml')) return toast.error("Selecione um XML válido.");
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      const content = e.target?.result as string;
+      const formatted = formatXML(content);
+      setXmlCode(formatted);
+      setFile(new File([new Blob([formatted], { type: 'text/xml' })], selectedFile.name));
+      setResult(null);
+      setCorrecoesManuais({});
+    };
+    reader.readAsText(selectedFile);
+  };
+
+  const handleValidate = async () => {
+    if (!file) return;
+    setLoading(true);
+    try {
+      const data = await validarCrcService(file);
+      setResult(data);
+      data.sucesso ? toast.success("XML CRC válido!") : toast.warning(`${data.erros.length} inconsistências encontradas.`);
+    } catch (err) {
+      toast.error("Erro na validação do arquivo.");
+    } finally { setLoading(false); }
+  };
+
+  const handleExportarOuRevalidar = async () => {
+    if (!file || !result) return;
+
+    const instrucoes: InstrucaoCorrecao[] = result.erros
+      .map(erro => {
+        const campo = getCampoAlvo(erro.mensagemDeErro);
+        const valor = correcoesManuais[`${erro.linhaDoArquivo}_${campo}`];
+        if (!valor) return null;
+        return {
+          linhaDoArquivo: erro.linhaDoArquivo,
+          localizacao: erro.localizacao,
+          campo,
+          novoValor: valor
+        };
+      })
+      .filter((i): i is InstrucaoCorrecao => i !== null);
+
+    setLoading(true);
+    try {
+      const response = await corrigirCrcService(file, instrucoes);
+
+      if (response.success || response.errorCount === 0) {
+        const url = window.URL.createObjectURL(response.data);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `CORRIGIDO_CRC_${Date.now()}.xml`;
+        a.click();
+        toast.success("XML CRC retificado com sucesso!");
+        setResult(null);
+      } else {
+        toast.warning(`Restam ${response.errorCount} ajustes no XSD.`);
+        const novoArquivo = new File([response.data], file.name, { type: 'text/xml' });
+        setFile(novoArquivo);
+        const data = await validarCrcService(novoArquivo);
+        setResult(data);
+        setCorrecoesManuais({});
+      }
+    } catch (err) {
+      toast.error("Erro ao aplicar correções no XML.");
+    } finally { setLoading(false); }
+  };
+
+  const handleGoToLine = (linha: number) => {
+    setViewMode('code');
+    setTimeout(() => {
+      if (editorRef.current) {
+        editorRef.current.revealLineInCenter(linha);
+        editorRef.current.setPosition({ lineNumber: linha, column: 1 });
+        editorRef.current.focus();
+      }
+    }, 150);
+  };
+
+  // Adicione isso no useEffect inicial de cada página de módulo
+  useEffect(() => {
+    const pathAtual = window.location.pathname;
+    const salvos = localStorage.getItem('orius_recent_modules');
+    let lista: string[] = salvos ? JSON.parse(salvos) : [];
+
+    // Remove se já existir (para evitar duplicatas) e adiciona no início
+    lista = [pathAtual, ...lista.filter(p => p !== pathAtual)].slice(0, 5); // Mantém os 5 últimos
+
+    localStorage.setItem('orius_recent_modules', JSON.stringify(lista));
+  }, []);
+
+  if (result) {
+    return (
+      <div className="pb-20 animate-in fade-in duration-500">
+        {/* Header de Ações Estilo CepCensec */}
+        <div className="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 sticky top-0 z-20 shadow-sm px-6 py-4 flex items-center justify-between">
+          <div className="flex bg-gray-100 dark:bg-gray-900 p-1 rounded-xl">
+            <button onClick={() => setViewMode('table')} className={`px-4 py-1.5 rounded-lg text-xs font-bold transition-all ${viewMode === 'table' ? 'bg-white dark:bg-gray-700 shadow-sm text-orange-600' : 'text-gray-500'}`}><List size={14} className="inline mr-1" /> Auditoria</button>
+            <button onClick={() => setViewMode('code')} className={`px-4 py-1.5 rounded-lg text-xs font-bold transition-all ${viewMode === 'code' ? 'bg-white dark:bg-gray-700 shadow-sm text-orange-600' : 'text-gray-500'}`}><Code size={14} className="inline mr-1" /> Código</button>
+          </div>
+          <div className="flex gap-2">
+            <button onClick={() => setResult(null)} className="px-3 py-1.5 text-xs font-bold bg-gray-100 dark:bg-gray-700 rounded-lg hover:bg-gray-200">Voltar</button>
+            {!result.sucesso && (
+              <button
+                onClick={handleExportarOuRevalidar}
+                disabled={loading || !todosErrosRespondidos}
+                className={`px-4 py-1.5 text-xs font-bold rounded-lg shadow-md flex items-center gap-2 transition-all ${!todosErrosRespondidos ? 'bg-gray-300 text-gray-500' : 'bg-orange-500 text-white hover:bg-orange-600'}`}
+              >
+                {loading ? <RefreshCcw className="animate-spin" size={14} /> : <Download size={14} />}
+                {todosErrosRespondidos ? 'Exportar Corrigido' : 'Preencha os Erros'}
+              </button>
+            )}
+          </div>
+        </div>
+
+        <div className="p-6 max-w-7xl mx-auto space-y-6">
+          <section className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <StatsCard title="Registros CRC" value={result.totalRegistros} icon={Search} />
+            <StatsCard title="Erros XSD" value={result.erros.length} icon={AlertCircle} variant={result.sucesso ? 'default' : 'danger'} />
+            <StatsCard title="Status" value={result.sucesso ? "Válido" : "Inconsistente"} icon={ShieldCheck} />
+          </section>
+
+          {result.sucesso ? (
+            <div className="bg-white dark:bg-gray-800 p-10 rounded-3xl border-2 border-dashed border-green-200 flex flex-col items-center text-center shadow-sm">
+              <div className="w-16 h-16 bg-green-100 text-green-600 rounded-full flex items-center justify-center mb-4"><ShieldCheck size={32} /></div>
+              <h2 className="text-2xl font-black text-gray-900 dark:text-white">Carga Validada!</h2>
+              <button onClick={() => setResult(null)} className="mt-6 px-8 py-3 bg-gray-900 text-white rounded-xl font-bold text-xs shadow-lg">Nova Auditoria</button>
+            </div>
+          ) : viewMode === 'table' ? (
+            <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 overflow-hidden shadow-sm">
+              <table className="w-full text-left text-sm">
+                <thead className="bg-gray-50 dark:bg-gray-900/50 text-[10px] uppercase text-gray-400 font-black border-b border-gray-200 dark:border-gray-700">
+                  <tr><th className="px-6 py-3">Registro</th><th className="px-6 py-3">Inconsistência XSD</th><th className="px-6 py-3">Correção</th></tr>
+                </thead>
+                <tbody className="divide-y divide-gray-100 dark:divide-gray-700">
+                  {result.erros.map((erro, idx) => {
+                    const campo = getCampoAlvo(erro.mensagemDeErro);
+                    const chave = `${erro.linhaDoArquivo}_${campo}`;
+
+                    return (
+                      <tr key={idx} className="hover:bg-gray-50/30 dark:hover:bg-gray-700/10 transition-colors">
+                        <td className="px-6 py-4">
+                          <button onClick={() => handleGoToLine(erro.linhaDoArquivo)} className="text-[9px] font-black text-orange-500 flex items-center gap-1 mb-1 tracking-tighter hover:underline uppercase">Linha {erro.linhaDoArquivo} <ExternalLink size={10} /></button>
+                          <div className="font-bold text-gray-900 dark:text-white leading-tight">{erro.localizacao}</div>
+                          <div className="text-[11px] text-gray-400 truncate max-w-[200px] font-medium">{erro.nomeDaParte}</div>
+                        </td>
+                        <td className="px-6 py-4">
+                          <div className="text-xs text-red-600 dark:text-red-400 font-bold leading-tight">{erro.mensagemDeErro}</div>
+                          <div className="text-[9px] text-gray-400 mt-1 uppercase font-bold tracking-widest">{erro.tipoAto}</div>
+                        </td>
+                        <td className="px-6 py-4">
+                          <input
+                            type="text"
+                            placeholder={`Novo valor para ${campo}...`}
+                            className="w-full bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg p-2 text-xs font-bold text-gray-900 dark:text-white outline-none focus:border-orange-500 transition-all"
+                            value={correcoesManuais[chave] || ''}
+                            onChange={(e) => handleSyncCorrecao(erro.linhaDoArquivo, e.target.value, erro.localizacao, erro.mensagemDeErro)}
+                          />
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+          ) : (
+            <div className="h-[calc(100vh-250px)] rounded-[2rem] overflow-hidden border-4 border-gray-100 dark:border-gray-800 shadow-2xl">
+              <Editor height="100%" defaultLanguage="xml" theme="vs-dark" value={xmlCode} onMount={(e) => (editorRef.current = e)} options={{ fontSize: 16, fontWeight: 'bold', automaticLayout: true }} />
+            </div>
+          )}
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="h-full flex flex-col items-center justify-center p-6 min-h-[calc(100vh-4rem)]">
+      {/* Tela de Seleção Inicial Estilo CepCensec */}
+      <div className="max-w-xl w-full space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-700">
+        <div className="text-center space-y-2">
+          <div className="inline-flex p-3 rounded-2xl bg-orange-500/10 text-orange-600 mb-2"><ShieldCheck size={32} /></div>
+          <h1 className="text-3xl font-black">Auditoria <span className="text-orange-500">CRC</span></h1>
+          <p className="text-sm text-gray-500 font-medium px-8">Validação técnica instantânea de arquivos XML de Carga de Registros (XSD v2.6).</p>
+        </div>
+
+        <div className="bg-white dark:bg-gray-800 rounded-3xl shadow-sm border border-gray-200 dark:border-gray-700 p-6 space-y-4">
+          <div onDragEnter={(e) => { e.preventDefault(); setDragActive(true); }} onDragLeave={() => setDragActive(false)} onDragOver={(e) => e.preventDefault()} onDrop={(e) => { e.preventDefault(); setDragActive(false); e.dataTransfer.files[0] && processFile(e.dataTransfer.files[0]); }} className={`relative flex flex-col items-center justify-center py-10 px-4 border-2 border-dashed rounded-2xl transition-all group ${dragActive ? 'border-orange-500 bg-orange-50/50' : 'border-gray-300 dark:border-gray-600 hover:border-orange-400'}`}>
+            <input type="file" accept=".xml" className="absolute inset-0 w-full h-full opacity-0 cursor-pointer" onChange={(e) => e.target.files && processFile(e.target.files[0])} />
+            <div className={`p-4 rounded-full mb-4 shadow-sm transition-all ${file ? 'bg-orange-500 text-white' : 'bg-gray-50 dark:bg-gray-900 text-gray-400'}`}><FileCode size={32} /></div>
+            <h3 className="text-base font-bold">{file ? file.name : 'Selecionar Arquivo XML CRC'}</h3>
+          </div>
+          <button onClick={handleValidate} disabled={loading || !file} className="w-full py-4 rounded-2xl font-black text-sm uppercase transition-all flex items-center justify-center gap-2 bg-orange-500 hover:bg-orange-600 text-white shadow-lg disabled:opacity-50">
+            {loading ? <Activity className="animate-spin" size={18} /> : <Search size={18} />}
+            {loading ? 'Validando Schema...' : 'Iniciar Auditoria CRC'}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}

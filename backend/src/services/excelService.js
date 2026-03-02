@@ -118,7 +118,7 @@ export const processarTabelaExcel = (filePath) => {
                 const row = rows[i];
                 if (!row) continue;
                 const cols = Array.from(row).map(val => (val !== null && val !== undefined) ? String(val).trim() : "");
-                const idxId = cols.findIndex(c => c.startsWith('Ids.'));
+                const idxId = cols.findIndex(c => c.startsWith('Ids.') || c.includes('ID'));
                 
                 if (idxId !== -1) {
                     headerRowIdx = i;

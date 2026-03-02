@@ -94,42 +94,67 @@ export const validarEstruturaJsonDoi = (json) => {
 
 /**
  * Higieniza o conteúdo bruto e o objeto da DOI para corrigir falhas de sistemas legados.
+ * Retorna o objeto processado e uma flag indicando se houve alterações.
  */
 export const higienizarDoiJson = (conteudoBruto) => {
-    // 1. Correção de Sintaxe Bruta (Regex)
-    // Procura por padrões como ":;" ou ":" e substitui por ":null" para não quebrar o parse
+    // 1. Correção de Sintaxe Bruta (Regex para evitar quebra do JSON.parse)
+    // Sistemas legados em Delphi podem gerar ": ;" ou deixar vírgulas sobrando
     let jsonLimpo = conteudoBruto
         .replace(/:\s*;/g, ': null') 
         .replace(/:\s*,/g, ': null,')
         .replace(/:\s*}/g, ': null}');
 
+    const mudouSintaxe = jsonLimpo !== conteudoBruto;
+    let mudouDados = false;
+
     try {
         const obj = JSON.parse(jsonLimpo);
 
-        // 2. Normalização de Campos Específicos
+        // 2. Normalização de Campos dentro das declarações
         if (obj.declaracoes && Array.isArray(obj.declaracoes)) {
             obj.declaracoes = obj.declaracoes.map(decl => {
-                // Sempre que valorPagoAteDataAto for string vazia ou undefined, vira null
-                if (decl.valorPagoAteDataAto === "" || decl.valorPagoAteDataAto === undefined) {
-                    decl.valorPagoAteDataAto = null;
-                }
                 
-                // Aproveita para normalizar outros campos monetários que seguem a mesma lógica
+                // --- REGRA: Limpeza automática do CIB ---
+                // Remove hífens (ex: 4206261-6 -> 42062616) para caber no maxLength: 8 do Schema
+                if (decl.cib && typeof decl.cib === 'string') {
+                    const cibLimpo = decl.cib.replace(/-/g, '').toUpperCase();
+                    if (decl.cib !== cibLimpo) {
+                        decl.cib = cibLimpo;
+                        mudouDados = true;
+                    }
+                }
+
+                // --- REGRA: Normalização de Campos Monetários ---
+                // Se o campo existir mas estiver vazio/null, removemos para não ferir o tipo 'number' do Schema
                 const camposMonetarios = [
                     'valorOperacaoImobiliaria', 
                     'valorBaseCalculoItbiItcmd', 
-                    'valorPagoMoedaCorrenteDataAto'
+                    'valorPagoMoedaCorrenteDataAto',
+                    'valorPagoAteDataAto'
                 ];
 
                 camposMonetarios.forEach(campo => {
-                    if (decl[campo] === "") decl[campo] = null;
+                    // Só processa se a declaração realmente possuir a chave
+                    if (Object.prototype.hasOwnProperty.call(decl, campo)) {
+                        const valor = decl[campo];
+                        if (valor === "" || valor === undefined || valor === null) {
+                            delete decl[campo];
+                            mudouDados = true;
+                        }
+                    }
                 });
 
                 return decl;
             });
         }
-        return obj;
+
+        return { 
+            dados: obj, 
+            foiHigienizado: mudouSintaxe || mudouDados 
+        };
+
     } catch (e) {
-        throw new Error("Falha crítica na estrutura do JSON: mesmo após higienização, o arquivo é inválido.");
+        // Erro fatal se o JSON for irreparável
+        throw new Error("Falha crítica na estrutura do JSON: o arquivo é inválido mesmo após a higienização.");
     }
 };
