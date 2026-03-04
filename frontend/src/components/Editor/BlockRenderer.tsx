@@ -1,4 +1,4 @@
-import { useState, useCallback, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { TextBlock } from './TextBlock';
 import { TableBlock } from '../TableBlock';
 import { PageBlock } from '../PageBlock';
@@ -13,6 +13,8 @@ import { uploadMediaService } from '../../services/api';
 import type { Block, BlockType } from '../../types';
 import { toast } from 'sonner';
 import { generatePdfThumbnail } from '../../utils/pdfPreviewHandler';
+import { DiagramBlock } from './DiagramBlock';
+import { MindMapBlock } from './MindMapBlock';
 
 interface BlockRendererProps {
   block: Block;
@@ -105,7 +107,7 @@ export function BlockRenderer({
     } catch (error) {
       console.error("Falha no upload:", error);
       toast.error("Erro ao processar o upload do arquivo.");
-      
+
       // Limpeza de estados de erro
       setPreviewUrl(null);
       setLocalMeta(null);
@@ -209,6 +211,27 @@ export function BlockRenderer({
           onUpdate={(d: any) => updateBlock(block.id, d)}
           onUpload={handleMediaUpload}
         />
+      );
+
+    case 'diagram':
+      return (
+        <div className="w-full my-6 block-diagram-wrapper">
+          <DiagramBlock
+            data={block.data}
+            onUpdate={(newData) => updateBlock(block.id, newData)}
+          />
+        </div>
+      );
+
+    case 'mindmap':
+      return (
+        <div className="w-full my-6">
+          <MindMapBlock
+            id={block.id}
+            data={block.data}
+            updateBlock={updateBlock}
+          />
+        </div>
       );
 
     default:

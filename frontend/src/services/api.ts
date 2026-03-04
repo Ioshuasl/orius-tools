@@ -4,7 +4,7 @@ import type { ApiResponse, ApiResponseCbo, ApiResponseCboImport, ApiResponseCboL
 // Criação da instância do Axios
 export const api = axios.create({
   // Tenta pegar do .env, se não existir usa localhost
-  baseURL: 'http://192.168.32.1:3000/api',
+  baseURL: 'http://localhost:3000/api',
   timeout: 30000, // 30 segundos (upload de arquivos pode demorar)
 });
 

@@ -2,7 +2,7 @@ import { useState, useMemo } from 'react';
 import { 
   Database, X, Copy, Check, ListFilter, Braces, 
   Link as LinkIcon, CheckSquare, Square, Filter, 
-  Trash2, Plus, Zap 
+  Trash2, Zap 
 } from 'lucide-react';
 import Editor from '@monaco-editor/react';
 import { useTheme } from '../contexts/ThemeContext';

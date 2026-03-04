@@ -5,10 +5,10 @@ import React from 'react';
 
 interface SortableBlockProps {
   id: string;
-  children: (props: any) => React.ReactNode; // Mudamos para render props ou passamos os listeners
+  children: React.ReactNode; // Mudamos para render props ou passamos os listeners
 }
 
-export function SortableBlock({ id, children }: { id: string, children: React.ReactNode }) {
+export function SortableBlock({ id, children }: SortableBlockProps) {
   const {
     attributes,
     listeners,

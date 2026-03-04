@@ -97,7 +97,7 @@ export const SortableItem = memo(({
   );
 }, (prev, next) => {
   return (
-    prev.block.data.text === next.block.data.text &&
+    JSON.stringify(prev.block.data) === JSON.stringify(next.block.data) &&
     prev.block.type === next.block.type &&
     prev.block.data.rows === next.block.data.rows &&
     prev.block.data.language === next.block.data.language &&

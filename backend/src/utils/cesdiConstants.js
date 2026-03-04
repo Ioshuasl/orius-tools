@@ -18,20 +18,35 @@ export const TIPOS_ATO_CESDI = {
     '11': 'Retificação de ato não notarial'
 };
 
-// 3.2. Qualidades da Parte por Tipo de Ato
-// Mapeamento rigoroso para validação cruzada
+// Qualidades padronizadas conforme solicitado (Caixa Alta e Acentuação)
+const Q = {
+    ADVOGADO: 'ADVOGADO(A)',
+    SEPARANDO: 'SEPARANDO(A)',
+    RECONCILIANDO: 'RECONCILIANDO(A)',
+    DIVORCIANDO: 'DIVORCIANDO(A)',
+    FALECIDO: 'FALECIDO(A)',
+    VIUVO: 'VIUVO(A)',
+    HERDEIRO: 'HERDEIRO(A)',
+    INVENTARIANTE: 'INVENTARIANTE',
+    CESSIONARIO: 'CESSIONÁRIO/ADJUDICATÁRIOS',
+    CEDENTE: 'CEDENTE',
+    INTERVENIENTE: 'INTERVENIENTE',
+    ANUENTE: 'ANUENTE'
+};
+
 export const QUALIDADES_POR_ATO = {
-    '1': ['Separando', 'Advogado', 'CessionarioAdjudicatarios', 'Cedente', 'Interveniente', 'Anuente'],
-    '2': ['Reconciliando', 'Advogado', 'CessionarioAdjudicatarios', 'Cedente', 'Interveniente', 'Anuente'],
-    '3': ['Divorciando', 'Advogado', 'CessionarioAdjudicatarios', 'Cedente', 'Interveniente', 'Anuente'],
-    '4': ['Divorciando', 'Advogado', 'CessionarioAdjudicatarios', 'Cedente', 'Interveniente', 'Anuente'],
-    '5': ['Falecido', 'Viuvo', 'Herdeiro', 'Advogado', 'CessionarioAdjudicatarios', 'Cedente', 'Interveniente', 'Anuente', 'Inventariante'],
-    '6': ['Falecido', 'Viuvo', 'Herdeiro', 'Advogado', 'CessionarioAdjudicatarios', 'Cedente', 'Interveniente', 'Anuente', 'Inventariante', 'Divorciando'],
-    '7': ['Divorciando', 'Separando', 'Falecido', 'Viuvo', 'Herdeiro', 'Advogado', 'CessionarioAdjudicatarios', 'Cedente', 'Interveniente', 'Anuente'],
-    '8': ['Falecido', 'Viuvo', 'Inventariante', 'Herdeiro', 'Advogado', 'CessionarioAdjudicatarios', 'Cedente', 'Interveniente', 'Anuente'],
-    '9': ['Falecido', 'Viuvo', 'Herdeiro', 'Divorciando', 'Advogado', 'CessionarioAdjudicatarios', 'Cedente', 'Interveniente', 'Anuente'],
-    '10': ['Falecido', 'Viuvo', 'Herdeiro', 'Advogado', 'CessionarioAdjudicatarios', 'Cedente', 'Interveniente', 'Anuente', 'Inventariante'],
-    '11': ['Divorciando', 'Separando', 'Falecido', 'Viuvo', 'Herdeiro', 'Advogado', 'CessionarioAdjudicatarios', 'Cedente', 'Interveniente', 'Anuente']
+    '1': [Q.SEPARANDO, Q.ADVOGADO, Q.CESSIONARIO, Q.CEDENTE, Q.INTERVENIENTE, Q.ANUENTE],
+    '2': [Q.RECONCILIANDO, Q.ADVOGADO, Q.CESSIONARIO, Q.CEDENTE, Q.INTERVENIENTE, Q.ANUENTE],
+    '3': [Q.DIVORCIANDO, Q.ADVOGADO, Q.CESSIONARIO, Q.CEDENTE, Q.INTERVENIENTE, Q.ANUENTE],
+    '4': [Q.DIVORCIANDO, Q.ADVOGADO, Q.CESSIONARIO, Q.CEDENTE, Q.INTERVENIENTE, Q.ANUENTE],
+    '5': [Q.FALECIDO, Q.ADVOGADO, Q.VIUVO, Q.HERDEIRO, Q.CESSIONARIO, Q.CEDENTE, Q.INTERVENIENTE, Q.ANUENTE, Q.INVENTARIANTE],
+    '6': [Q.FALECIDO, Q.ADVOGADO, Q.DIVORCIANDO, Q.VIUVO, Q.HERDEIRO, Q.CESSIONARIO, Q.CEDENTE, Q.INTERVENIENTE, Q.ANUENTE, Q.INVENTARIANTE],
+    '7': [Q.DIVORCIANDO, Q.SEPARANDO, Q.FALECIDO, Q.VIUVO, Q.HERDEIRO, Q.ADVOGADO, Q.CESSIONARIO, Q.CEDENTE, Q.INTERVENIENTE, Q.ANUENTE],
+    // ATO 8: Prioridade para INVENTARIANTE e FALECIDO(A)
+    '8': [Q.INVENTARIANTE, Q.FALECIDO, Q.VIUVO, Q.HERDEIRO, Q.ADVOGADO, Q.CESSIONARIO, Q.CEDENTE, Q.INTERVENIENTE, Q.ANUENTE],
+    '9': [Q.FALECIDO, Q.ADVOGADO, Q.DIVORCIANDO, Q.VIUVO, Q.HERDEIRO, Q.CESSIONARIO, Q.CEDENTE, Q.INTERVENIENTE, Q.ANUENTE],
+    '10': [Q.FALECIDO, Q.ADVOGADO, Q.VIUVO, Q.HERDEIRO, Q.CESSIONARIO, Q.CEDENTE, Q.INTERVENIENTE, Q.ANUENTE, Q.INVENTARIANTE],
+    '11': [Q.DIVORCIANDO, Q.SEPARANDO, Q.FALECIDO, Q.VIUVO, Q.HERDEIRO, Q.ADVOGADO, Q.CESSIONARIO, Q.CEDENTE, Q.INTERVENIENTE, Q.ANUENTE]
 };
 
 // 3.3. Responsável pelos Menores

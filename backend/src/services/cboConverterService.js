@@ -8,7 +8,8 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 // Configuração do caminho do executável do Poppler
-const PDF_TO_TEXT_PATH = 'C:\\poppler\\Library\\bin\\pdftotext.exe';
+const PDF_TO_TEXT_PATH = process.env.PDFTOTEXT_PATH ||
+    (process.platform === 'win32' ? 'C:\\poppler\\Library\\bin\\pdftotext.exe' : 'pdftotext');
 
 /**
  * Converte o PDF de CBO para um formato JSON.
@@ -39,7 +40,7 @@ export function convertCboPdfToJson(inputPdfPath) {
 
             for (const line of lines) {
                 const trimmedLine = line.trim();
-                
+
                 if (!trimmedLine || trimmedLine.includes("Relatório de Titulo") || trimmedLine.includes("CBO 2002")) {
                     continue;
                 }
@@ -66,15 +67,15 @@ const isMainModule = process.argv[1] === __filename || process.argv[1]?.endsWith
 
 if (isMainModule) {
     const pdfPath = path.join(__dirname, 'cbo2002_lista.pdf');
-    
+
     console.log("🚀 Iniciando conversão (ESM)...");
-    
+
     try {
         const cboJson = await convertCboPdfToJson(pdfPath); // Top-level await permitido em ESM
-        
+
         const outputPath = path.join(__dirname, 'cbo_convertido.json');
         fs.writeFileSync(outputPath, JSON.stringify(cboJson, null, 2), 'utf-8');
-        
+
         console.log(`✅ Sucesso! ${cboJson.length} registros processados.`);
         console.log(`📂 Arquivo salvo em: ${outputPath}`);
     } catch (err) {

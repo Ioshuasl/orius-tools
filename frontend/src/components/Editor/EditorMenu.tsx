@@ -2,7 +2,8 @@ import { useState, useMemo, useEffect, useRef } from 'react';
 import {
   Type, Hash, List, ListOrdered, Table,
   Image as ImageIcon, Video, FilePlus, Code, Search,
-  FileText
+  FileText, Shapes,
+  Brain
 } from 'lucide-react';
 import type { BlockType } from '../../types';
 
@@ -24,6 +25,20 @@ export function EditorMenu({ addBlock }: EditorMenuProps) {
     { label: 'Lista Numerada', icon: <ListOrdered size={16} />, type: 'numbered_list' as BlockType, desc: 'Sequencial', category: 'Básicos' },
     { label: 'Tabela', icon: <Table size={16} />, type: 'table' as BlockType, desc: 'Dados estruturados', category: 'Mídia' },
     { label: 'Código SQL', icon: <Code size={16} />, type: 'code' as BlockType, desc: 'Editor Monaco', category: 'Mídia' },
+    {
+      label: 'Diagrama',
+      icon: <Shapes size={16} />,
+      type: 'diagram' as BlockType,
+      desc: 'Fluxogramas e quadros brancos',
+      category: 'Avançado'
+    },
+    {
+      label: 'Mapa Mental',
+      icon: <Brain size={16} />,
+      type: 'mindmap' as BlockType,
+      desc: 'Organize ideias visualmente',
+      category: 'Avançado'
+    },
     { label: 'Imagem', icon: <ImageIcon size={16} />, type: 'image' as BlockType, desc: 'Upload de imagem', category: 'Mídia' },
     { label: 'Vídeo', icon: <Video size={16} />, type: 'video' as BlockType, desc: 'Upload de vídeo', category: 'Mídia' },
     {

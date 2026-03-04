@@ -1,14 +1,13 @@
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef } from 'react';
 import {
   FileCode, Search, RefreshCcw, AlertCircle,
   Activity, Code, List,
-  ExternalLink, ShieldCheck, History, Download
+  ExternalLink, ShieldCheck, Download
 } from 'lucide-react';
 import { toast } from 'sonner';
 import Editor from '@monaco-editor/react';
 
 import { StatsCard } from '../components/StatsCard';
-import { HistoryModal } from '../components/HistoryModal';
 import { validarCepService, corrigirCepService } from '../services/api';
 import type { ApiResponseCensec, InstrucaoCorrecao } from '../types';
 import { formatXML } from '../utils/xmlHelpers';
@@ -21,13 +20,11 @@ export default function CepCensec() {
   const [loading, setLoading] = useState(false);
   const [dragActive, setDragActive] = useState(false);
   const [viewMode, setViewMode] = useState<'table' | 'code'>('table');
-  
+
   /** * ESTADO DE CORREÇÕES:
    * Chave: "linha_campo" (ex: "544_ReferenteCns") para suportar múltiplos erros na mesma linha.
    */
   const [correcoesManuais, setCorrecoesManuais] = useState<Record<string, string>>({});
-  const [showHistoryModal, setShowHistoryModal] = useState(false);
-  const [historicoAcumulado, setHistoricoAcumulado] = useState<Record<string, any>>({});
 
   /**
    * Identifica qual tag XML deve ser corrigida com base na mensagem do backend.
@@ -50,7 +47,7 @@ export default function CepCensec() {
   /**
    * REPLICAÇÃO INTELIGENTE (Smart Sync):
    * Se preencher um campo de ato (como CNS), replica para o mesmo campo em todos os 
-   * blocos do mesmo Livro/Folha.
+   * blocos do mesmo Livro/Folha. Ignora campos individuais como Qualidade das Partes.
    */
   const handleSyncCorrecao = (linha: number, valor: string, localizacao: string, mensagem: string) => {
     const campoAtual = getCampoAlvo(mensagem);
@@ -58,12 +55,19 @@ export default function CepCensec() {
 
     setCorrecoesManuais(prev => {
       const novas = { ...prev, [chaveAtual]: valor };
-      
-      // Replica se for o mesmo campo na mesma localização (mesmo ato)
+
+      // Bloqueia a replicação para campos que são únicos por pessoa/parte
+      const camposIndividuais = ['ParteQualidade', 'ParteTipoDocumento', 'ParteNumeroDocumento'];
+
+      if (camposIndividuais.includes(campoAtual)) {
+        return novas;
+      }
+
+      // Replica apenas campos de "Ato" (CNS, Livro, Folha, etc) para o mesmo bloco
       result?.erros.forEach(erro => {
         const campoErro = getCampoAlvo(erro.mensagemDeErro);
         const chaveErro = `${erro.linhaDoArquivo}_${campoErro}`;
-        
+
         if (erro.localizacao === localizacao && campoErro === campoAtual && chaveErro !== chaveAtual) {
           novas[chaveErro] = valor;
         }
@@ -113,11 +117,11 @@ export default function CepCensec() {
         const campo = getCampoAlvo(erro.mensagemDeErro);
         const valor = correcoesManuais[`${erro.linhaDoArquivo}_${campo}`];
         if (!valor) return null;
-        return { 
-          linhaDoArquivo: erro.linhaDoArquivo, 
-          localizacao: erro.localizacao, 
-          campo, 
-          novoValor: valor 
+        return {
+          linhaDoArquivo: erro.linhaDoArquivo,
+          localizacao: erro.localizacao,
+          campo,
+          novoValor: valor
         };
       })
       .filter((i): i is InstrucaoCorrecao => i !== null);
@@ -133,14 +137,14 @@ export default function CepCensec() {
         a.download = `CORRIGIDO_${file.name}`;
         a.click();
         toast.success("XML exportado com sucesso!");
-        setResult({ success: true, total_atos_agrupados: result.total_atos_agrupados, total_erros: 0, erros: [] });
+        setResult({ ...result, success: true, total_erros: 0, erros: [] });
       } else {
         toast.warning(`Restam ${response.errorCount} ajustes.`);
         const novoArquivo = new File([response.data], file.name, { type: 'text/xml' });
         setFile(novoArquivo);
         const data = await validarCepService(novoArquivo);
         setResult(data);
-        setCorrecoesManuais({}); 
+        setCorrecoesManuais({});
       }
     } catch (err) {
       toast.error("Erro ao aplicar correções.");

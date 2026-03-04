@@ -14,6 +14,7 @@ const responderValidacao = (res, result, filePath) => {
     return res.json({
         success: result.sucesso,
         total_atos_agrupados: result.totalAtos,
+        atos: result.atos,
         total_erros: result.erros.length,
         erros: result.erros
     });

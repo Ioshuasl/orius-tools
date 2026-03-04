@@ -99,7 +99,7 @@ export interface ErroCensec {
   /** * No CESDI, este campo agora recebe o nome amigável do ato (Ex: "Retificação")
    * enviado pelo backend para melhorar a UI/UX.
    */
-  tipoAto?: string; 
+  tipoAto?: string;
   mensagemDeErro: string;
   tipoDeErro: string;
   /** * Lista de opções enviada pelo backend (ex: Qualidades permitidas para aquele ato)
@@ -108,7 +108,7 @@ export interface ErroCensec {
   opcoesAceitas?: string[];
   /** * Campo auxiliar controlado pelo estado do React para armazenar a edição do usuário
    */
-  valorCorrigido?: string; 
+  valorCorrigido?: string;
 }
 
 export interface ApiResponseCensec {
@@ -116,13 +116,13 @@ export interface ApiResponseCensec {
   total_atos_agrupados: number;
   total_erros: number;
   erros: ErroCensec[];
-  foi_higienizado?: boolean; 
+  foi_higienizado?: boolean;
   conteudo_limpo?: any;
 }
 
 // src/types.ts
 
-export type BlockType = 'text' | 'h1' | 'h2' | 'h3' | 'image' | 'video' | 'code' | 'table' | 'page' | 'bullet_list' | 'numbered_list' | 'quote' | 'divider' | 'file';
+export type BlockType = 'text' | 'h1' | 'h2' | 'h3' | 'image' | 'video' | 'code' | 'table' | 'page' | 'bullet_list' | 'numbered_list' | 'quote' | 'divider' | 'file' | 'diagram' | 'mindmap';
 
 export interface Block {
   id: string;
@@ -227,7 +227,7 @@ export interface CenprotTitulo {
   numeroDoc: string;
   valor: string;
   devedor: string;
-  tipoAto: string; 
+  tipoAto: string;
   status: 'OK' | 'ERRO';
   mensagemErro?: string | null;
 }
@@ -275,7 +275,7 @@ export interface MinutaQualifyResponse {
   success: boolean;
   message: string;
   // Opcional: URL para download do DOCX gerado
-  downloadUrl?: string; 
+  downloadUrl?: string;
 }
 
 // --- CBO (Classificação Brasileira de Ocupações) ---
@@ -367,4 +367,24 @@ export interface ApiResponseIbgeSync {
     success: boolean;
     count: number;
   };
+}
+
+// Adicione ao seu types.ts
+export interface AtoAgrupado {
+  id: string;
+  nomeAto: string;
+  livro: string;
+  folha: string;
+  sucesso: boolean;
+  partes: { nome: string; qualidade: string; linha: number }[];
+  errosDoAto: ErroCensec[];
+  dataAto?: string;
+}
+
+export interface ApiResponseCensec {
+  success: boolean;
+  total_atos_agrupados: number;
+  total_erros: number;
+  erros: ErroCensec[];
+  atos: AtoAgrupado[]; // A nova lista
 }

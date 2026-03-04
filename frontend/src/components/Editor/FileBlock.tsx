@@ -5,7 +5,6 @@ import {
   Loader2, 
   File as FileIcon, 
   ExternalLink, 
-  Maximize2, 
   X, 
   Eye
 } from 'lucide-react';

@@ -1,6 +1,7 @@
 @import "tailwindcss";
 @plugin "@tailwindcss/typography";
 @plugin "tailwindcss-animate";
+@import "@excalidraw/excalidraw/index.css";
 
 /* Ensina o Tailwind v4 a aplicar o modo escuro quando a classe .dark estiver presente no HTML */
 @custom-variant dark (&:where(.dark, .dark *));

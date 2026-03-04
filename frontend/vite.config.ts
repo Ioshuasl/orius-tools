@@ -8,6 +8,5 @@ export default defineConfig({
   server: {
     open: true, // Abre o navegador automaticamente
     port: 5173, // Porta padrão do Vite
-    host: true
   }
 })

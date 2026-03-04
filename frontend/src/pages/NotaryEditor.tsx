@@ -90,7 +90,7 @@ const NotaryEditor: React.FC = () => {
       <div style={{ flex: 1, overflowY: 'auto', padding: '40px 20px', display: 'flex', justifyContent: 'center' }}>
         <Editor
           apiKey="sny4ncto4hf42akdz2eqss2tqd0loo439vfttpuydjc2kqpi"
-          onInit={(evt, editor) => editorRef.current = editor}
+          onInit={(editor) => editorRef.current = editor}
           init={{
             width: '210mm',
             min_height: '297mm',

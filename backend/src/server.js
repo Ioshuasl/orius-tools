@@ -42,7 +42,11 @@ app.use(cors({
     // Permite que o frontend leia os headers de validação do XML
     exposedHeaders: ['X-Validation-Success', 'X-Validation-Errors'],
 }));
-app.use(express.json());
+// Aumente o limite para o parser de JSON
+app.use(express.json({ limit: '50mb' }));
+
+// Também é recomendável aumentar para o urlencoded, caso use
+app.use(express.urlencoded({ limit: '50mb', extended: true }));
 
 // Rota da Documentação Swagger
 app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec));

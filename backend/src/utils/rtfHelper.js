@@ -8,7 +8,9 @@ import path from 'node:path';
 export const convertRtfToHtml = (inputPath) => {
     const tempDir = path.dirname(inputPath);
     const fileName = path.basename(inputPath, path.extname(inputPath));
-    const sofficePath = `"C:\\Program Files\\LibreOffice\\program\\soffice.exe"`;
+    const sofficePath = process.platform === 'win32' 
+    ? `"C:\\Program Files\\LibreOffice\\program\\soffice.exe"` 
+    : `soffice`;
     
     const command = `${sofficePath} --headless --convert-to html --outdir "${tempDir}" "${inputPath}"`;
     execSync(command);

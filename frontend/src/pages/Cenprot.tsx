@@ -8,7 +8,7 @@ import { toast } from 'sonner';
 import Editor from '@monaco-editor/react';
 
 import { validarXmlCenprotLote } from '../services/api';
-import type { CenprotValidationResponse, CenprotApresentante } from '../types';
+import type { CenprotValidationResponse } from '../types';
 import { StatsCard } from '../components/StatsCard';
 import { formatXML } from '../utils/xmlHelpers';
 

@@ -93,6 +93,7 @@ export default function RctoCensec() {
 
         return {
           linhaDoArquivo: erro.linhaDoArquivo,
+          localizacao: erro.localizacao,
           campo: campo,
           novoValor: correcoesManuais[erro.linhaDoArquivo]
         };
@@ -134,12 +135,7 @@ export default function RctoCensec() {
         toast.success("XML RCTO Corrigido!");
         localStorage.removeItem('orius_rcto_history');
 
-        setResult({
-          success: true,
-          total_atos_agrupados: result.total_atos_agrupados,
-          total_erros: 0,
-          erros: []
-        });
+        setResult({ ...result, success: true, total_erros: 0, erros: [] });
       } else {
         toast.error(`Restam ${response.errorCount} erros no RCTO.`);
         const novoArquivo = new File([response.data], file.name, { type: 'text/xml' });

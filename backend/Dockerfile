@@ -1,32 +1,41 @@
-# Usa uma imagem leve do Node.js 20 (baseada em Debian)
-FROM node:20-slim
+# Usa a imagem oficial do Node.js 20 baseada em Debian
+FROM node:20
 
-# 1. Instala as dependências do sistema (Poppler e dependências para o Tesseract)
-# O apt-get install poppler-utils instala o pdftoppm e o pdftotext
-RUN apt-get update && \
-    apt-get install -y poppler-utils \
-    libgconf-2-4 \
-    wget \
+# Evita prompts interativos durante a instalação
+ENV DEBIAN_FRONTEND=noninteractive
+
+# Instala as dependências do sistema necessárias para os serviços
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    # Poppler: Fornece pdftoppm e pdftotext
+    poppler-utils \
+    # LibreOffice: Para conversão de RTF para HTML
+    libreoffice \
+    # Tesseract: Motor de OCR e dados da língua portuguesa
+    tesseract-ocr \
+    tesseract-ocr-por \
+    # Fontes básicas para renderização
+    fonts-liberation \
+    # Limpeza
     && apt-get clean \
     && rm -rf /var/lib/apt/lists/*
 
-# 2. Define o diretório de trabalho dentro do container
-WORKDIR /app
+# Define o diretório de trabalho
+WORKDIR /usr/src/app
 
-# 3. Copia os arquivos de dependência
+# Copia os arquivos de dependências
 COPY package*.json ./
 
-# 4. Instala as dependências do Node.js
-RUN npm install --production
+# Instala as dependências do Node.js (incluindo tesseract.js e sequelize)
+RUN npm install
 
-# 5. Copia o restante do código fonte
+# Copia todo o código fonte
 COPY . .
 
-# 6. Cria a pasta de uploads para garantir que existe
-RUN mkdir -p src/uploads
+# Cria a pasta de uploads conforme definido no seu middleware
+RUN mkdir -p uploads && chmod 777 uploads
 
-# 7. Expõe a porta que a API usa
+# Expõe a porta que a API utiliza
 EXPOSE 3000
 
-# 8. Comando para iniciar a aplicação
+# Comando corrigido: utiliza o script definido no seu package.json
 CMD ["npm", "start"]

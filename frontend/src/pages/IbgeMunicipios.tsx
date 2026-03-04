@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { 
     MapPin, Search, RefreshCcw, Globe, 
     CheckCircle2, AlertCircle, Filter, Download, Copy

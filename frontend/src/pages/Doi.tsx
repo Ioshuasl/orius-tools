@@ -113,12 +113,7 @@ export default function Doi() {
         toast.success("Lote DOI Higienizado e Exportado!");
         localStorage.removeItem('orius_doi_history');
 
-        setResult({
-          success: true,
-          total_atos_agrupados: result.total_atos_agrupados,
-          total_erros: 0,
-          erros: []
-        });
+        setResult({ ...result, success: true, total_erros: 0, erros: [] });
       } else {
         toast.error(`Restam ${response.errorCount} erros no lote.`);
         const novoArquivo = new File([response.data], file.name, { type: 'application/json' });

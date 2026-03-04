@@ -1,7 +1,7 @@
 import React, { useEffect, useState, useRef } from 'react';
 import {
     Search, RefreshCcw, Briefcase, ChevronLeft,
-    ChevronRight, Plus, Trash2, Edit, FileUp, ListFilter
+    ChevronRight, Plus, Trash2, Edit, FileUp
 } from 'lucide-react';
 import { toast } from 'sonner';
 
@@ -19,7 +19,6 @@ export default function CboPage() {
     const [loading, setLoading] = useState(true);
     const [page, setPage] = useState(1);
     const [totalPages, setTotalPages] = useState(0);
-    const [totalItems, setTotalItems] = useState(0);
 
     // Estados de busca e Modal
     const [searchTerm, setSearchTerm] = useState('');
@@ -35,7 +34,6 @@ export default function CboPage() {
             if (response.success) {
                 setCbos(response.data);
                 setTotalPages(response.totalPages);
-                setTotalItems(response.total);
             }
         } catch (error: any) {
             toast.error('Erro ao sincronizar com o banco de dados');
