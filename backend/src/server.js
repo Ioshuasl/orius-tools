@@ -16,6 +16,7 @@ import minutaRoutes from './routes/minutaRoutes.js';
 import cboRoutes from './routes/cboRoutes.js';
 import crcRoutes from './routes/crcRoutes.js';
 import ibgeRoutes from './routes/ibgeRoutes.js';
+import tabelaEmolumentosRoutes from './routes/tabelaEmolumentosRoutes.js';
 import { swaggerSpec } from './config/swagger.js';
 
 const app = express();
@@ -62,6 +63,7 @@ app.use('/api/minutas', minutaRoutes);
 app.use('/api/cbo', cboRoutes);
 app.use('/api/crc', crcRoutes);
 app.use('/api/ibge', ibgeRoutes);
+app.use('/api/tabela-emolumentos', tabelaEmolumentosRoutes);
 
 // Servir arquivos estáticos da pasta uploads
 app.use('/uploads', express.static(path.resolve(process.cwd(), 'uploads')));

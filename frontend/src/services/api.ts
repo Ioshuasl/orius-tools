@@ -1,5 +1,5 @@
 import axios from 'axios';
-import type { ApiResponse, ApiResponseCbo, ApiResponseCboImport, ApiResponseCboList, ApiResponseCensec, ApiResponseCommunity, ApiResponseIbgeSync, ApiResponseTabela, Cbo, CenprotValidationResponse, CommunityPage, CrcValidationResponse, IbgeDistrito, InstrucaoCorrecao, MinutaImportResponse, MinutaQualifyRequest, MinutaQualifyResponse } from '../types';
+import type { ApiResponse, ApiResponseCbo, ApiResponseCboImport, ApiResponseCboList, ApiResponseCensec, ApiResponseCommunity, ApiResponseIbgeSync, ApiResponseImportTabela, ApiResponseTabela, Cbo, CenprotValidationResponse, CommunityPage, CrcValidationResponse, IbgeDistrito, InstrucaoCorrecao, MinutaImportResponse, MinutaQualifyRequest, MinutaQualifyResponse, TabelaEmolumentosFull, TabelaEmolumentosHeader } from '../types';
 
 // Criação da instância do Axios
 export const api = axios.create({
@@ -44,6 +44,8 @@ export const converterTabelaService = async (arquivoXlsx: File): Promise<ApiResp
       'Content-Type': 'multipart/form-data',
     },
   });
+
+  console.log('Resposta da conversão da tabela:', response.data); // Log para depuração
 
   return response.data;
 };
@@ -475,5 +477,49 @@ export const getIbgeDistritosService = async (params?: {
  */
 export const syncIbgeService = async (): Promise<ApiResponseIbgeSync> => {
   const response = await api.post<ApiResponseIbgeSync>('/ibge/sincronizar');
+  return response.data;
+};
+
+/**
+ * TABELA DE EMOLUMENTOS - Lista todas as tabelas (cabeçalhos) cadastradas.
+ * Endpoint: GET /tabela-emolumentos
+ */
+export const getAllTabelasEmolumentos = async (): Promise<TabelaEmolumentosHeader[]> => {
+  const response = await api.get<TabelaEmolumentosHeader[]>('/tabela-emolumentos');
+  return response.data;
+};
+
+/**
+ * TABELA DE EMOLUMENTOS - Busca os detalhes e os 1500+ registros de uma tabela específica.
+ * Endpoint: GET /tabela-emolumentos/:id
+ */
+export const getTabelaEmolumentosById = async (id: number): Promise<TabelaEmolumentosFull> => {
+  const response = await api.get<TabelaEmolumentosFull>(`/tabela-emolumentos/${id}`);
+  return response.data;
+};
+
+/**
+ * TABELA DE EMOLUMENTOS - Importa um novo arquivo Excel e cadastra no banco de dados.
+ * @param arquivoXlsx O arquivo .xlsx do TJGO.
+ * @param nomeTabela Nome personalizado definido pelo usuário.
+ * Endpoint: POST /tabela-emolumentos/import
+ */
+export const importTabelaEmolumentosXlsx = async (
+  arquivoXlsx: File, 
+  nomeTabela: string
+): Promise<ApiResponseImportTabela> => {
+  const formData = new FormData();
+  
+  // O backend espera o campo 'file' (pelo multer) e 'nomeTabela' (pelo req.body)
+  formData.append('file', arquivoXlsx); 
+  formData.append('nomeTabela', nomeTabela);
+
+  const response = await api.post<ApiResponseImportTabela>('/tabela-emolumentos/import', formData, {
+    headers: {
+      'Content-Type': 'multipart/form-data',
+    },
+  });
+
+  console.log('✅ Tabela importada e cadastrada:', response.data);
   return response.data;
 };

@@ -3,7 +3,7 @@ import path from 'path';
 
 export const loadReferenceMap = () => {
     // Como estamos em ES Modules, usamos process.cwd() para garantir o caminho correto a partir da raiz
-    const jsonPath = path.resolve(process.cwd(), 'codigo-descricao-tabela-emolumentos.json');
+    const jsonPath = path.resolve(process.cwd(), './src/codigo-descricao-tabela-emolumentos.json');
 
     if (!fs.existsSync(jsonPath)) {
         console.warn(`⚠️ AVISO: Tabela de referência não encontrada em: ${jsonPath}`);

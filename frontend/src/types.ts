@@ -63,6 +63,7 @@ export interface ApiResponse {
 
 export interface TabelaEmolumentosItem {
   id_selo: number;
+  ano_tabela: number;
   descricao_selo: string;
   faixa_cotacao: number | null;
   id_selo_combinado: string | null;
@@ -387,4 +388,55 @@ export interface ApiResponseCensec {
   total_erros: number;
   erros: ErroCensec[];
   atos: AtoAgrupado[]; // A nova lista
+}
+
+/**
+ * Interface para o cabeçalho da tabela (TabelaEmolumentos)
+ */
+export interface TabelaEmolumentosHeader {
+  id: number;
+  nome: string;
+  ano: number;
+  ativa: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
+
+/**
+ * Interface detalhada para cada item da tabela (RegistroTabelaEmolumentos)
+ */
+export interface RegistroTabelaEmolumentos {
+  id: number;
+  tabela_id: number;
+  id_selo: number;
+  ano_tabela: number;
+  descricao_selo: string;
+  sistema: string;
+  faixa_cotacao: number | null;
+  valor_emolumento: number;
+  valor_taxa_judiciaria: number;
+  id_selo_combinado: string | null;
+  // Campos de Protesto e Faixas Dinâmicas
+  ato?: string;
+  condicao_especial?: string;
+  condicao_pagamento?: string;
+  faixa_valor_inicio?: number;
+  faixa_valor_fim?: number | null;
+}
+
+/**
+ * Resposta completa para a consulta por ID (Cabeçalho + Array de Registros)
+ */
+export interface TabelaEmolumentosFull extends TabelaEmolumentosHeader {
+  registros: RegistroTabelaEmolumentos[];
+}
+
+/**
+ * Resposta padrão para o sucesso da importação
+ */
+export interface ApiResponseImportTabela {
+  success: boolean;
+  tabela_id: number;
+  nome: string;
+  total_registros: number;
 }

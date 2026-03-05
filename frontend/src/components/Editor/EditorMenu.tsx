@@ -3,7 +3,7 @@ import {
   Type, Hash, List, ListOrdered, Table,
   Image as ImageIcon, Video, FilePlus, Code, Search,
   FileText, Shapes,
-  Brain
+  Brain, Minus
 } from 'lucide-react';
 import type { BlockType } from '../../types';
 
@@ -21,6 +21,13 @@ export function EditorMenu({ addBlock }: EditorMenuProps) {
     { label: 'Título 1', icon: <Hash size={16} />, type: 'h1' as BlockType, desc: 'Título grande', category: 'Básicos' },
     { label: 'Título 2', icon: <Hash size={16} />, type: 'h2' as BlockType, desc: 'Título médio', category: 'Básicos' },
     { label: 'Título 3', icon: <Hash size={16} />, type: 'h3' as BlockType, desc: 'Título pequeno', category: 'Básicos' },
+    {
+      label: 'Divisor',
+      icon: <Minus size={16} />,
+      type: 'divider' as BlockType,
+      desc: 'Separação visual',
+      category: 'Básicos'
+    },
     { label: 'Lista Simples', icon: <List size={16} />, type: 'bullet_list' as BlockType, desc: 'Marcadores', category: 'Básicos' },
     { label: 'Lista Numerada', icon: <ListOrdered size={16} />, type: 'numbered_list' as BlockType, desc: 'Sequencial', category: 'Básicos' },
     { label: 'Tabela', icon: <Table size={16} />, type: 'table' as BlockType, desc: 'Dados estruturados', category: 'Mídia' },

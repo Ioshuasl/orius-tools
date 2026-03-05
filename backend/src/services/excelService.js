@@ -110,6 +110,15 @@ export const processarTabelaExcel = (filePath) => {
             const sheet = workbook.Sheets[workbook.SheetNames[0]];
             const rows = XLSX.utils.sheet_to_json(sheet, { header: 1 });
 
+            // --- CAPTURA DO ANO DA TABELA (Célula B5) ---
+            let anoTabela = null;
+            const celulaB5 = rows[4] ? rows[4][1] : null; // Linha 5 (index 4), Coluna B (index 1)
+            
+            if (celulaB5) {
+                const matchAno = String(celulaB5).match(/\d{4}/);
+                if (matchAno) anoTabela = parseInt(matchAno[0]);
+            }
+
             let headerRowIdx = -1;
             let colIndices = {};
 
@@ -184,7 +193,8 @@ export const processarTabelaExcel = (filePath) => {
                     id_selo_combinado: idComb,
                     valor_emolumento: emolumento,
                     valor_taxa_judiciaria: taxa,
-                    sistema: currentSystem
+                    sistema: currentSystem,
+                    ano_tabela: anoTabela
                 };
 
                 if (currentSystem === 'PROTESTO DE TÍTULOS') {

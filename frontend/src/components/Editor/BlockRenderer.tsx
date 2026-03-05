@@ -154,6 +154,13 @@ export function BlockRenderer({
         </div>
       );
 
+    case 'divider':
+      return (
+        <div className="py-3 group/divider select-none">
+          <hr className="border-t border-gray-200 dark:border-gray-800" />
+        </div>
+      );
+
     case 'h1':
     case 'h2':
     case 'h3':

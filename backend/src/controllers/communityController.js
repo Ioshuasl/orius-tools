@@ -40,7 +40,7 @@ export const createPage = async (req, res) => {
 export const getPublications = async (req, res) => {
     try {
         const { search, system, tag } = req.query;
-        let whereClause = { parentId: null };
+        let whereClause = {};
 
         if (search) {
             const searchLower = `%${search.toLowerCase()}%`;

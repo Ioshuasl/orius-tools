@@ -1,14 +1,14 @@
 import { type ReactNode, useRef } from 'react';
-import { Loader2 } from 'lucide-react';
+import { Loader2, X } from 'lucide-react'; // Adicionei o ícone X
 
 interface MediaWrapperProps {
-  children: ReactNode;           // O conteúdo específico (img, video ou card de arquivo)
-  isUploading?: boolean;        // Estado de carregamento vindo do BlockRenderer
-  hasUrl: boolean;              // Define se exibe o conteúdo ou o seletor de upload
-  onRemove: () => void;         // Função para limpar os dados do bloco
-  onUpload: (file: File) => void; // Função que chama o uploadMediaService
-  label: string;                // Texto de instrução (ex: "Upload de Imagem")
-  icon: ReactNode;              // Ícone correspondente ao tipo de mídia
+  children: ReactNode;
+  isUploading?: boolean;
+  hasUrl: boolean;
+  onRemove: () => void;
+  onUpload: (file: File) => void;
+  label: string;
+  icon: ReactNode;
 }
 
 export function MediaWrapper({ 
@@ -27,7 +27,6 @@ export function MediaWrapper({
     const file = e.target.files?.[0];
     if (file) {
       onUpload(file);
-      // Limpa o input para permitir subir o mesmo arquivo novamente se deletado
       e.target.value = ''; 
     }
   };
@@ -37,7 +36,21 @@ export function MediaWrapper({
       {hasUrl ? (
         /* Estado: Mídia Carregada */
         <div className="rounded-2xl overflow-hidden border border-gray-100 dark:border-gray-800 bg-gray-50 dark:bg-black/20 group relative transition-all duration-300 hover:shadow-md">
-          {children}          
+          {children}
+          
+          {/* Botão de Remover - Agora utilizando a prop onRemove */}
+          {!isUploading && (
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                onRemove();
+              }}
+              className="absolute top-2 right-2 p-1.5 bg-white/90 dark:bg-gray-800/90 text-gray-500 hover:text-red-500 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 opacity-0 group-hover:opacity-100 transition-opacity z-20"
+              title="Remover mídia"
+            >
+              <X size={16} />
+            </button>
+          )}
         </div>
       ) : (
         /* Estado: Seletor de Upload / Vazio */

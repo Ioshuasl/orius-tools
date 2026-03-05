@@ -22,7 +22,6 @@ export function Sidebar() {
     { path: '/normas', label: 'Normas Extrajudiciais', icon: FileSearch },
     { path: '/database', label: 'Banco de Dados', icon: FileSpreadsheet },
     { path: '/comunidade', label: 'Comunidade Suporte', icon: MessagesSquare },
-    { path: '/minutas', label: 'Editor de Minutas', icon: FileSearch },
     { path: '/cbo', label: 'Profissões (CBO)', icon: Briefcase },
     { path: '/ibge-municipios', label: 'IBGE Municípios', icon: MapPin },
   ];

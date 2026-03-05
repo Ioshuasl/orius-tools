@@ -32,11 +32,13 @@ export function parseMarkdownToBlocks(text: string): Block[] {
   let codeBuffer: string[] = [];
   let currentLanguage = 'javascript';
 
+  const generateId = () => Math.random().toString(36).substring(2, 11);
+
   for (let i = 0; i < lines.length; i++) {
     const line = lines[i];
     const trimmed = line.trim();
 
-    // --- Lógica de Bloco de Código (Não formatamos conteúdo inline aqui) ---
+    // --- Lógica de Bloco de Código ---
     if (line.startsWith('```')) {
       if (!isInsideCode) {
         isInsideCode = true;
@@ -44,7 +46,7 @@ export function parseMarkdownToBlocks(text: string): Block[] {
         currentLanguage = line.replace('```', '').trim() || 'javascript';
       } else {
         blocks.push({
-          id: Math.random().toString(36).substring(2, 11),
+          id: generateId(),
           type: 'code',
           data: { code: codeBuffer.join('\n'), language: currentLanguage }
         });
@@ -58,9 +60,18 @@ export function parseMarkdownToBlocks(text: string): Block[] {
       continue;
     }
 
-    if (trimmed === "") continue;
+    // --- Lógica de Divisor (Inspirado no Notion) ---
+    // Detecta sequências comuns de Markdown para réguas horizontais
+    if (trimmed === '---' || trimmed === '***' || trimmed === '___') {
+      blocks.push({
+        id: generateId(),
+        type: 'divider',
+        data: {}
+      });
+      continue;
+    }
 
-    const generateId = () => Math.random().toString(36).substring(2, 11);
+    if (trimmed === "") continue;
 
     // --- Processamento de Conteúdo com Formatação Inline ---
     
@@ -84,7 +95,7 @@ export function parseMarkdownToBlocks(text: string): Block[] {
         data: { text: formatInlineMarkdown(line.replace('### ', '').trim()) } 
       });
     } 
-    // Listas (Note o formatInlineMarkdown no conteúdo)
+    // Listas
     else if (trimmed.startsWith('- ') || trimmed.startsWith('* ')) {
       blocks.push({ 
         id: generateId(), 
@@ -108,9 +119,10 @@ export function parseMarkdownToBlocks(text: string): Block[] {
     }
   }
 
+  // Fecha bloco de código caso o arquivo termine sem fechar as aspas
   if (isInsideCode && codeBuffer.length > 0) {
     blocks.push({
-      id: Math.random().toString(36).substring(2, 11),
+      id: generateId(),
       type: 'code',
       data: { code: codeBuffer.join('\n'), language: currentLanguage }
     });
